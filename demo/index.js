@@ -43,7 +43,6 @@ async function serverRESTHandler(req, res) {
 
 /* The Zeebe workers, including the affinity worker, can be running elsewhere on the network */
 async function startZeebeWorkers() {
-  await zbc.initialise(); // <- you need to initialise to allow affinity to be established before doing work
   zbc.createAffinityWorker("publish-outcome"); // <- put one of these tasks last in a workflow to publish the outcome
 
   // This normal task worker does not need affinity, so use the standard worker

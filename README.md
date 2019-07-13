@@ -48,4 +48,4 @@ You can use the
 
 ## TODO
 
-Better Documentation, an image, and Dockerfile for the Affinity Server.
+Better Documentation, an image, and Dockerfile for the Affinity Server. Better error and edge case handling. Load testing.

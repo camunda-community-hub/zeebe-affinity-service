@@ -14,6 +14,7 @@ const AffinityServiceOpenTimeout = 2000;
 
 interface ZBAffinityClientOptions extends ZBClientOptions {
   affinityServiceUrl: string;
+  affinityTimeout: number;
 }
 export class ZBAffinityClient extends ZBClient {
   affinityServiceUrl: string;
@@ -22,6 +23,7 @@ export class ZBAffinityClient extends ZBClient {
   affinityCallbacks: {
     [workflowInstanceKey: string]: (workflowOutcome: WorkflowOutcome) => void;
   };
+  affinityTimeout: number;
 
   constructor(gatewayAddress: string, options: ZBAffinityClientOptions) {
     super(gatewayAddress, options);
@@ -29,16 +31,17 @@ export class ZBAffinityClient extends ZBClient {
       this.throwNoConnectionConfigured();
     }
     this.affinityServiceUrl = options && options.affinityServiceUrl;
+    this.affinityTimeout = (options && options.affinityTimeout) || 2000;
     this.affinityCallbacks = {};
     this.createAffinityService();
   }
 
-  createAffinityWorker(taskType: string) {
+  async createAffinityWorker(taskType: string) {
     if (!this.affinityServiceUrl) {
       this.throwNoConnectionConfigured();
     }
-    if (!this.affinityService) {
-      this.throwNoConnection();
+    if (this.affinityService.readyState !== WebSocket.OPEN) {
+      await this.waitForAffinity();
     }
     registerWorker(this.affinityService);
     super.createWorker(uuid(), taskType, (job, complete) => {
@@ -68,15 +71,8 @@ export class ZBAffinityClient extends ZBClient {
     if (!this.affinityServiceUrl && cb) {
       this.throwNoConnectionConfigured();
     }
-    if (!this.affinityService) {
-      // Wait two seconds for the Affinity service connection to be established...
-      // This is to avoid the potential race condition on initialisation.
-      await new Promise(resolve =>
-        setTimeout(() => {}, AffinityServiceOpenTimeout)
-      );
-      if (!this.affinityService) {
-        this.throwNoConnection();
-      }
+    if (this.affinityService.readyState !== WebSocket.OPEN) {
+      await this.waitForAffinity();
     }
     // TODO check for error creating workflow to prevent registering callback?
     const wfi = await super.createWorkflowInstance(
@@ -91,14 +87,14 @@ export class ZBAffinityClient extends ZBClient {
     return wfi;
   }
 
-  async initialise(timeout = 2000) {
+  async waitForAffinity() {
     const sleep = waitTimeInMs =>
       new Promise(resolve => setTimeout(resolve, waitTimeInMs));
     const timeoutFn = setTimeout(() => {
       this.throwNoConnection();
-    }, timeout);
+    }, this.affinityTimeout);
     while (this.affinityService.readyState !== WebSocket.OPEN) {
-      await sleep(500);
+      await sleep(200);
     }
     clearTimeout(timeoutFn);
   }
@@ -111,9 +107,9 @@ export class ZBAffinityClient extends ZBClient {
 
   private throwNoConnection() {
     throw new Error(
-      `This ZBAffinityClient has not established a connection to the Zeebe Affinity Server at ${
+      `This ZBAffinityClient timed out establishing a connection to the Zeebe Affinity Server at ${
         this.affinityServiceUrl
-      } and cannot take a callback!`
+      }!`
     );
   }
 
