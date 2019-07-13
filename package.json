@@ -11,7 +11,7 @@
     "url": "git+https://github.com/jwulf/zeebe-affinity-service.git"
   },
   "keywords": [],
-  "author": "",
+  "author": "Josh Wulf <josh.wulf@camunda.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/jwulf/zeebe-affinity-service/issues"
