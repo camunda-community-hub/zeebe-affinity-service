@@ -44,7 +44,13 @@ node index.js
 
 ## Using in your code
 
-You can use the
+You can install this from npm:
+
+```
+npm i zeebe-node-affinity
+```
+
+And use it in place / alongside the standard Node client. You will need to host the Affinity Server on your network for it to be of any use. Docker image coming soon.
 
 ## TODO
 
