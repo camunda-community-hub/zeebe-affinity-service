@@ -35,14 +35,21 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
                 yield this.waitForAffinity();
             }
             WebSocketAPI_1.registerWorker(this.affinityService);
-            _super.createWorker.call(this, uuid_1.v4(), taskType, (job, complete) => {
+            _super.createWorker.call(this, uuid_1.v4(), taskType, (job, complete) => __awaiter(this, void 0, void 0, function* () {
+                if (this.affinityService.readyState !== ws_1.default.OPEN) {
+                    try {
+                        yield this.waitForAffinity();
+                    }
+                    catch (e) {
+                        return complete.failure(`Could not contact Affinity Server at ${this.affinityServiceUrl}`);
+                    }
+                }
                 WebSocketAPI_1.publishWorkflowOutcomeToAffinityService({
                     workflowInstanceKey: job.jobHeaders.workflowInstanceKey,
                     variables: job.variables
                 }, this.affinityService);
-                // TODO error handling and fail the job?
                 complete.success();
-            });
+            }));
         });
     }
     createWorkflowInstanceWithAffinity({ bpmnProcessId, variables, version, cb }) {

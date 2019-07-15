@@ -41,7 +41,16 @@ export class ZBAffinityClient extends ZBClient {
       await this.waitForAffinity();
     }
     registerWorker(this.affinityService);
-    super.createWorker(uuid(), taskType, (job, complete) => {
+    super.createWorker(uuid(), taskType, async (job, complete) => {
+      if (this.affinityService.readyState !== WebSocket.OPEN) {
+        try {
+          await this.waitForAffinity();
+        } catch (e) {
+          return complete.failure(
+            `Could not contact Affinity Server at ${this.affinityServiceUrl}`
+          );
+        }
+      }
       publishWorkflowOutcomeToAffinityService(
         {
           workflowInstanceKey: job.jobHeaders.workflowInstanceKey,
@@ -49,7 +58,6 @@ export class ZBAffinityClient extends ZBClient {
         },
         this.affinityService
       );
-      // TODO error handling and fail the job?
       complete.success();
     });
   }

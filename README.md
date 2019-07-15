@@ -1,12 +1,77 @@
 # Zeebe Affinity Service
 
-Zeebe Affinity Service to communicate workflow outcome to its initiator via a web socket subscription.
+This is a server and an enhanced Zeebe Node client (extending [zeebe-node]()) to enable you to return the outcome of a Zeebe workflow in a synchronous REST req/res pattern.
 
-This server listens for workflow outcomes, which are communicated by Zeebe Affinity Workers. This relies on a task at the end of the workflow that is serviced by the included affinity worker.
+You may initiate a workflow in Zeebe in response to a REST request, and want to return the outcome of that workflow in the REST response. If your REST front-end is scalable, you need some kind of session affinity.
 
-Zeebe Affinity Clients subscribe to the Affinity service when they initiate a workflow, and then receive the workflow outcome on completion.
+Zeebe Node Affinity uses a websocket server to distribute workflow outcomes to interested clients. The `zeebe-node-affinity` library provides the `createWorkflowWithAffinity` method that extends the `createWorkflow` method with a callback. This callback is executed in-memory with the final variable state of the workflow. It can be used like this:
 
-This allows you start a workflow in response to a REST request, and send the workflow outcome back to the requestor in the response.
+```typescript
+const { ZBAffinityClient } = require("zeebe-node-affinity");
+
+const zbc = new ZBAffinityClient("zeebe-broker:26500", {
+    affinityServiceUrl: "ws://zeebe-affinity-server:8080"
+});
+
+async function handleRequest(req, res) {
+    const wfi =  await zbc.createWorkflowInstanceWithAffinity({
+        bpmnProcessId: req.route,
+        variables: req.params,
+        cb: ({ variables }) => res.send(variables) // <- this callback gets the workflow outcome
+    }).catch(err => {
+        console.error(err.stack)
+        res.status(500).send("Something broke!")
+    });
+    console.log(`Created new workflow instance ${wfi.key}`);
+}
+```
+
+The programming model in your REST server is a simple callback. This is invoked over web-sockets by a Zeebe Affinity server. Creating a Zeebe Affinity Server is easy:
+
+```typescript
+const { ZBAffinityServer } = require("zeebe-node-affinity");
+
+const zbsPort = 8080;
+const zbs = new ZBAffinityServer({ logLevel: "INFO" });
+
+zbs.listen(zbsPort, () =>
+  console.log(`Zeebe Affinity Server listening on port ${zbsPort}`)
+);
+
+setInterval(() => zbs.outputStats(), 1000 * 60 * 5); // 5 minutes
+```
+
+This server needs to run on the same network as the REST server front-end and the Zeebe workers.
+
+To communicate the outcome of the workflow to the Zeebe Affinity Server, you need to put a task as the last task in your workflow, and create a Zeebe Affinity worker to service it:
+
+![](img/affinity-task.png)
+
+The task-type that you pass to the Affinity Worker constructor should match the task-type of the final task:
+
+![](img/affinity-task-type.png)
+
+Here is the worker code:
+
+```typescript
+const { ZBAffinityClient } = require("zeebe-node-affinity");
+
+const zbc = new ZBAffinityClient("zeebe-broker:26500", {
+    affinityServiceUrl: "ws://zeebe-affinity-server:8080",
+    affinityTimeout: 5000;
+});
+
+const afw = zbc.createAffinityWorker("publish-outcome")
+                .catch(e => console.log("Could not contact Affinity Server!"));
+```
+
+The Affinity Worker will now service this task-type, and communicate the workflow state to the Affinity Server, which sends it to all connected clients, where it is matched against the workflow instance key to invoke the handler on the appropriate client.
+
+We throw in the constructor if we cannot contact the affinity server within `affinityTimeout` milliseconds. We don't want the worker completing jobs if it cannot communicate the results to the Affinity Server.
+
+Similarly, the worker will fail jobs that it takes where it cannot communicate the outcome to an Affinity Server. This will cause an incident to be raised if the connection is not re-established.
+
+## Scaling
 
 The Zeebe Workflow Clients (which initiate workflows), and the Zeebe Affinity Workers (which collect the workflow outcomes) can be scaled.
 
@@ -55,4 +120,4 @@ And use it in place / alongside the standard Node client. You will need to host 
 
 ## TODO
 
-Better Documentation, an image, and Dockerfile for the Affinity Server. Better error and edge case handling. Load testing.
+Dockerfile for the Affinity Server.
