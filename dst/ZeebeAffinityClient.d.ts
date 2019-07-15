@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import WebSocket from "ws";
 import { ZBClient } from "zeebe-node";
 import { KeyedObject, ZBClientOptions } from "zeebe-node/dist/lib/interfaces";
@@ -14,6 +15,7 @@ export declare class ZBAffinityClient extends ZBClient {
         [workflowInstanceKey: string]: (workflowOutcome: WorkflowOutcome) => void;
     };
     affinityTimeout: number;
+    pingTimeout: NodeJS.Timer;
     constructor(gatewayAddress: string, options: ZBAffinityClientOptions);
     createAffinityWorker(taskType: string): Promise<void>;
     createWorkflowInstanceWithAffinity<Variables = KeyedObject>({ bpmnProcessId, variables, version, cb }: {
@@ -25,5 +27,8 @@ export declare class ZBAffinityClient extends ZBClient {
     waitForAffinity(): Promise<void>;
     private throwNoConnection;
     private createAffinityService;
+    private heartbeat;
+    private setUpConnection;
+    private handleMessage;
 }
 export {};

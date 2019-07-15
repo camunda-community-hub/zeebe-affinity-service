@@ -42,21 +42,8 @@ async function serverRESTHandler(req, res) {
   });
 }
 
-/* The Zeebe workers, including the affinity worker, can be running elsewhere on the network */
-async function startZeebeWorkers() {
-  zbc.createAffinityWorker("publish-outcome"); // <- put one of these tasks last in a workflow to publish the outcome
-
-  // This normal task worker does not need affinity, so use the standard worker
-  const taskWorker = zbc.createWorker(
-    "worker1",
-    "transform",
-    (job, complete) => {
-      complete.success({
-        message: `Hello ${job.variables.name}!`
-      });
-    }
-  );
+async function deployWorkflow() {
   const wf = await zbc.deployWorkflow("./affinity-test.bpmn");
 }
 
-startZeebeWorkers().then(emulateRESTClient);
+deployWorkflow().then(emulateRESTClient);

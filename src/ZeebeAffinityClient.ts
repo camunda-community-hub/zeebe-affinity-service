@@ -1,3 +1,4 @@
+import promiseRetry from "promise-retry";
 import { v4 as uuid } from "uuid";
 import WebSocket from "ws";
 import { ZBClient } from "zeebe-node";
@@ -9,6 +10,8 @@ import {
   registerWorker,
   WorkflowOutcome
 } from "./WebSocketAPI";
+
+const AFFINITY_TIMEOUT_DEFAULT = 30000;
 
 interface ZBAffinityClientOptions extends ZBClientOptions {
   affinityServiceUrl: string;
@@ -22,6 +25,7 @@ export class ZBAffinityClient extends ZBClient {
     [workflowInstanceKey: string]: (workflowOutcome: WorkflowOutcome) => void;
   };
   affinityTimeout: number;
+  pingTimeout!: NodeJS.Timer;
 
   constructor(gatewayAddress: string, options: ZBAffinityClientOptions) {
     super(gatewayAddress, options);
@@ -31,15 +35,14 @@ export class ZBAffinityClient extends ZBClient {
       );
     }
     this.affinityServiceUrl = options && options.affinityServiceUrl;
-    this.affinityTimeout = (options && options.affinityTimeout) || 2000;
+    this.affinityTimeout =
+      (options && options.affinityTimeout) || AFFINITY_TIMEOUT_DEFAULT;
     this.affinityCallbacks = {};
     this.createAffinityService();
   }
 
   async createAffinityWorker(taskType: string) {
-    if (this.affinityService.readyState !== WebSocket.OPEN) {
-      await this.waitForAffinity();
-    }
+    await this.waitForAffinity();
     registerWorker(this.affinityService);
     super.createWorker(uuid(), taskType, async (job, complete) => {
       if (this.affinityService.readyState !== WebSocket.OPEN) {
@@ -73,9 +76,8 @@ export class ZBAffinityClient extends ZBClient {
     version?: number;
     cb: (workflowOutcome: WorkflowOutcome) => void;
   }) {
-    if (this.affinityService.readyState !== WebSocket.OPEN) {
-      await this.waitForAffinity();
-    }
+    await this.waitForAffinity();
+
     // TODO check for error creating workflow to prevent registering callback?
     const wfi = await super.createWorkflowInstance(
       bpmnProcessId,
@@ -90,15 +92,24 @@ export class ZBAffinityClient extends ZBClient {
   }
 
   async waitForAffinity() {
-    const sleep = waitTimeInMs =>
-      new Promise(resolve => setTimeout(resolve, waitTimeInMs));
-    const timeoutFn = setTimeout(() => {
-      this.throwNoConnection();
-    }, this.affinityTimeout);
-    while (this.affinityService.readyState !== WebSocket.OPEN) {
-      await sleep(200);
+    if (
+      !this.affinityService ||
+      this.affinityService.readyState !== WebSocket.OPEN
+    ) {
+      const sleep = waitTimeInMs =>
+        new Promise(resolve => setTimeout(resolve, waitTimeInMs));
+      const timeoutFn = setTimeout(() => {
+        this.throwNoConnection();
+      }, this.affinityTimeout);
+      while (
+        !this.affinityService ||
+        this.affinityService.readyState !== WebSocket.OPEN
+      ) {
+        await sleep(200);
+      }
+
+      clearTimeout(timeoutFn);
     }
-    clearTimeout(timeoutFn);
   }
 
   private throwNoConnection() {
@@ -109,30 +120,63 @@ export class ZBAffinityClient extends ZBClient {
     );
   }
 
-  private createAffinityService() {
+  private async createAffinityService() {
     if (!this.affinityServiceUrl) {
       return;
     }
-    this.affinityService = new WebSocket(this.affinityServiceUrl, {
-      perMessageDeflate: false
-    });
-
-    this.affinityService.on("open", () => {
-      registerClient(this.affinityService);
-      console.log(
-        `Connected to Zeebe Affinity Service at ${this.affinityServiceUrl}`
-      );
-    });
-
-    this.affinityService.on("message", data => {
-      const outcome = demarshalWorkflowOutcome(data);
-      if (outcome) {
-        const wfi = outcome.workflowInstanceKey;
-        if (this.affinityCallbacks[wfi]) {
-          this.affinityCallbacks[wfi](outcome);
-          this.affinityCallbacks[wfi] = undefined as any; // Object.delete degrades performance with large objects
+    console.log("Creating affinity connection");
+    const setUpConnection = this.setUpConnection.bind(this);
+    await promiseRetry((retry, number) =>
+      new Promise(async (resolve, reject) => {
+        try {
+          this.affinityService = new WebSocket(this.affinityServiceUrl, {
+            perMessageDeflate: false
+          });
+          this.affinityService.on("error", err => {
+            console.log("ERRER", err);
+            reject();
+          });
+          this.affinityService.on("open", () => {
+            setUpConnection();
+            resolve();
+          });
+        } catch (e) {
+          console.log(e.message);
+          reject(e);
         }
+      }).catch(retry)
+    );
+  }
+
+  private heartbeat(): void {
+    clearTimeout(this.pingTimeout);
+
+    this.pingTimeout = setTimeout(() => {
+      this.affinityService.terminate();
+      this.affinityService = undefined as any;
+      this.createAffinityService();
+    }, 30000 + 1000);
+  }
+
+  private setUpConnection() {
+    registerClient(this.affinityService);
+    console.log(
+      `Connected to Zeebe Affinity Service at ${this.affinityServiceUrl}`
+    );
+    this.heartbeat();
+
+    this.affinityService.on("ping", this.heartbeat.bind(this));
+    this.affinityService.on("message", this.handleMessage.bind(this));
+  }
+
+  private handleMessage(data) {
+    const outcome = demarshalWorkflowOutcome(data);
+    if (outcome) {
+      const wfi = outcome.workflowInstanceKey;
+      if (this.affinityCallbacks[wfi]) {
+        this.affinityCallbacks[wfi](outcome);
+        this.affinityCallbacks[wfi] = undefined as any; // Object.delete degrades performance with large objects
       }
-    });
+    }
   }
 }
