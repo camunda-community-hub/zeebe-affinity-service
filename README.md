@@ -1,6 +1,6 @@
 # Zeebe Affinity Service
 
-This is a server and an enhanced Zeebe Node client (extending [zeebe-node]()) to enable you to return the outcome of a Zeebe workflow in a synchronous REST req/res pattern.
+This is a server and an enhanced Zeebe Node client (extending [zeebe-node](https://github.com/creditsenseau/zeebe-client-node-js)) to enable you to return the outcome of a Zeebe workflow in a synchronous REST req/res pattern.
 
 You may initiate a workflow in Zeebe in response to a REST request, and want to return the outcome of that workflow in the REST response. If your REST front-end is scalable, you need some kind of session affinity.
 
