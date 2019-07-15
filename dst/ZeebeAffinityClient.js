@@ -15,12 +15,11 @@ const uuid_1 = require("uuid");
 const ws_1 = __importDefault(require("ws"));
 const zeebe_node_1 = require("zeebe-node");
 const WebSocketAPI_1 = require("./WebSocketAPI");
-const AffinityServiceOpenTimeout = 2000;
 class ZBAffinityClient extends zeebe_node_1.ZBClient {
     constructor(gatewayAddress, options) {
         super(gatewayAddress, options);
         if (!(options && options.affinityServiceUrl)) {
-            this.throwNoConnectionConfigured();
+            throw new Error("This ZBAffinityClient constructor options must have a url for a Zeebe Affinity Server!");
         }
         this.affinityServiceUrl = options && options.affinityServiceUrl;
         this.affinityTimeout = (options && options.affinityTimeout) || 2000;
@@ -32,9 +31,6 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
             createWorker: { get: () => super.createWorker }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.affinityServiceUrl) {
-                this.throwNoConnectionConfigured();
-            }
             if (this.affinityService.readyState !== ws_1.default.OPEN) {
                 yield this.waitForAffinity();
             }
@@ -54,9 +50,6 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
             createWorkflowInstance: { get: () => super.createWorkflowInstance }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.affinityServiceUrl && cb) {
-                this.throwNoConnectionConfigured();
-            }
             if (this.affinityService.readyState !== ws_1.default.OPEN) {
                 yield this.waitForAffinity();
             }
@@ -79,9 +72,6 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
             }
             clearTimeout(timeoutFn);
         });
-    }
-    throwNoConnectionConfigured() {
-        throw new Error("This ZBAffinityClient does not have a connection to a Zeebe Affinity Server configured, and cannot take a callback!");
     }
     throwNoConnection() {
         throw new Error(`This ZBAffinityClient timed out establishing a connection to the Zeebe Affinity Server at ${this.affinityServiceUrl}!`);

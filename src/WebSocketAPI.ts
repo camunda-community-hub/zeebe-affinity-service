@@ -25,6 +25,7 @@ export interface WorkflowOutcome {
   workflowInstanceKey: string;
   variables: { [key: string]: string | number };
 }
+
 export function registerWorker(ws: WebSocket) {
   ws.send(JSON.stringify({ type: AffinityAPIMessageType.REGISTER_WORKER }));
 }

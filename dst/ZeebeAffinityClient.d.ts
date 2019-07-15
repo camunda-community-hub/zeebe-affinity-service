@@ -23,7 +23,6 @@ export declare class ZBAffinityClient extends ZBClient {
         cb: (workflowOutcome: WorkflowOutcome) => void;
     }): Promise<import("zeebe-node/dist/lib/interfaces").CreateWorkflowInstanceResponse>;
     waitForAffinity(): Promise<void>;
-    private throwNoConnectionConfigured;
     private throwNoConnection;
     private createAffinityService;
 }

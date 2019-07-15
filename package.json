@@ -1,8 +1,8 @@
 {
   "name": "zeebe-node-affinity",
-  "version": "0.18.2",
+  "version": "0.18.3",
   "description": "Zeebe node client and affinity service to communicate workflow outcome to its initiator via a web socket subscription",
-  "main": "index.js",
+  "main": "dst/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

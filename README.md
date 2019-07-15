@@ -31,7 +31,8 @@ docker run -it --name zeebe -p 26500:26500 camunda/zeebe:0.18.0
 Start the Affinity Server:
 
 ```
-ZEEBE_AFFINITY_SERVER_STATS_INTERVAL=1 node dst/server.js
+cd demo
+node affinity-server.js
 ```
 
 ### Terminal 3

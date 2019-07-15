@@ -10,8 +10,6 @@ import {
   WorkflowOutcome
 } from "./WebSocketAPI";
 
-const AffinityServiceOpenTimeout = 2000;
-
 interface ZBAffinityClientOptions extends ZBClientOptions {
   affinityServiceUrl: string;
   affinityTimeout: number;
@@ -28,7 +26,9 @@ export class ZBAffinityClient extends ZBClient {
   constructor(gatewayAddress: string, options: ZBAffinityClientOptions) {
     super(gatewayAddress, options);
     if (!(options && options.affinityServiceUrl)) {
-      this.throwNoConnectionConfigured();
+      throw new Error(
+        "This ZBAffinityClient constructor options must have a url for a Zeebe Affinity Server!"
+      );
     }
     this.affinityServiceUrl = options && options.affinityServiceUrl;
     this.affinityTimeout = (options && options.affinityTimeout) || 2000;
@@ -37,9 +37,6 @@ export class ZBAffinityClient extends ZBClient {
   }
 
   async createAffinityWorker(taskType: string) {
-    if (!this.affinityServiceUrl) {
-      this.throwNoConnectionConfigured();
-    }
     if (this.affinityService.readyState !== WebSocket.OPEN) {
       await this.waitForAffinity();
     }
@@ -68,9 +65,6 @@ export class ZBAffinityClient extends ZBClient {
     version?: number;
     cb: (workflowOutcome: WorkflowOutcome) => void;
   }) {
-    if (!this.affinityServiceUrl && cb) {
-      this.throwNoConnectionConfigured();
-    }
     if (this.affinityService.readyState !== WebSocket.OPEN) {
       await this.waitForAffinity();
     }
@@ -97,12 +91,6 @@ export class ZBAffinityClient extends ZBClient {
       await sleep(200);
     }
     clearTimeout(timeoutFn);
-  }
-
-  private throwNoConnectionConfigured() {
-    throw new Error(
-      "This ZBAffinityClient does not have a connection to a Zeebe Affinity Server configured, and cannot take a callback!"
-    );
   }
 
   private throwNoConnection() {

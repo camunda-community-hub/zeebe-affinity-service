@@ -6,16 +6,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dayjs_1 = __importDefault(require("dayjs"));
 const ws_1 = __importDefault(require("ws"));
 const WebSocketAPI_1 = require("./WebSocketAPI");
-class ZeebeAffinityServer {
-    constructor(port = 8089, options) {
+class ZBAffinityServer {
+    constructor(options) {
         this.workers = [];
         this.clients = [];
-        this.port = port;
         this.options = options || {};
+        if (this.options.statsInterval) {
+            setInterval(() => this.outputStats(), this.options.statsInterval);
+        }
     }
-    listen() {
+    listen(port, cb) {
         this.wss = new ws_1.default.Server({
-            port: this.port,
+            port,
             perMessageDeflate: false
         });
         // TODO Handle connection failure and remove both clients and workers when they go away
@@ -35,22 +37,26 @@ class ZeebeAffinityServer {
                 }
             });
         });
+        if (cb) {
+            cb();
+        }
+    }
+    stats() {
+        return {
+            time: dayjs_1.default().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+            workerCount: this.workers.length,
+            clientCount: this.clients.length,
+            cpu: process.cpuUsage(),
+            memory: process.memoryUsage()
+        };
     }
     outputStats() {
-        console.log(dayjs_1.default().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A")); // display
-        console.log(`Worker count: ${this.workers.length}`);
-        console.log(`Client count: ${this.clients.length}`);
-        console.log(`CPU:`, process.cpuUsage());
-        console.log(`Memory used:`, process.memoryUsage());
+        const stats = this.stats();
+        console.log(stats.time); // display
+        console.log(`Worker count: ${stats.workerCount}`);
+        console.log(`Client count: ${stats.clientCount}`);
+        console.log(`CPU:`, stats.cpu);
+        console.log(`Memory used:`, stats.memory);
     }
 }
-exports.ZeebeAffinityServer = ZeebeAffinityServer;
-/**
- * Client connects.
- * When it registers as a client (interest in workflow outcomes)
- * When a worker communicates a workflow outcome, we broadcast the workflow to all clients. They are responsible for determining
- * whether or not the workflow outcome is of interest to them.
- *
- * We could manage that in the server, with subscriptions for specific outcomes. However, this would multiple the roundtrips and the
- * CPU and memory usage of the server.
- */
+exports.ZBAffinityServer = ZBAffinityServer;

@@ -1,4 +1,5 @@
 const { ZBAffinityClient } = require("../dst"); // require("zeebe-node-affinity");
+
 // On the internal network, we are using the Zeebe Node client with Affinity - zeebe-node-affinity
 const zbc = new ZBAffinityClient("localhost:26500", {
   affinityServiceUrl: "ws://localhost:8089" //  <- you need to run an Affinity server for this to work
