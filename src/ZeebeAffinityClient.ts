@@ -108,6 +108,7 @@ export class ZBAffinityClient extends ZBClient {
     this.affinityService = new WebSocket(this.affinityServiceUrl, {
       perMessageDeflate: false
     });
+
     this.affinityService.on("open", () => {
       registerClient(this.affinityService);
       console.log(

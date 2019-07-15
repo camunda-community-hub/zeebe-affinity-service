@@ -25,6 +25,8 @@ export interface WorkflowOutcome {
 }
 export declare function registerWorker(ws: WebSocket): void;
 export declare function registerClient(ws: WebSocket): void;
-export declare function broadcastWorkflowOutcome(clients: WebSocket[], workflowOutcome: WorkflowOutcome): void;
+export declare function broadcastWorkflowOutcome(clients: {
+    [uuid: string]: WebSocket;
+}, workflowOutcome: WorkflowOutcome): void;
 export declare function demarshalWorkflowOutcome(data: any): WorkflowOutcome | undefined;
 export declare function publishWorkflowOutcomeToAffinityService(workflowOutcome: WorkflowOutcome, ws: any): void;

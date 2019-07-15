@@ -20,7 +20,7 @@ function registerClient(ws) {
 exports.registerClient = registerClient;
 function broadcastWorkflowOutcome(clients, workflowOutcome) {
     const message = Object.assign({ type: AffinityAPIMessageType.WORKFLOW_OUTCOME }, workflowOutcome);
-    clients.forEach(client => {
+    Object.values(clients).forEach(client => {
         if (client.readyState === ws_1.default.OPEN) {
             client.send(JSON.stringify(message));
         }

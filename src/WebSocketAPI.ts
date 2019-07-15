@@ -35,14 +35,14 @@ export function registerClient(ws: WebSocket) {
 }
 
 export function broadcastWorkflowOutcome(
-  clients: WebSocket[],
+  clients: { [uuid: string]: WebSocket },
   workflowOutcome: WorkflowOutcome
 ) {
   const message: WorkflowOutcomeMessage = {
     type: AffinityAPIMessageType.WORKFLOW_OUTCOME,
     ...workflowOutcome
   };
-  clients.forEach(client => {
+  Object.values(clients).forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify(message));
     }
