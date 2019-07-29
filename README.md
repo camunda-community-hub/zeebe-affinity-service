@@ -1,4 +1,4 @@
-# Zeebe Affinity Service
+# Zeebe Node Affinity 
 
 This is a server and an enhanced Zeebe Node client (extending [zeebe-node](https://github.com/creditsenseau/zeebe-client-node-js)) to enable you to return the outcome of a Zeebe workflow in a synchronous REST req/res pattern.
 
