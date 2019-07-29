@@ -2,7 +2,19 @@
 
 This is a server and an enhanced Zeebe Node client (extending [zeebe-node](https://github.com/creditsenseau/zeebe-client-node-js)) to enable you to return the outcome of a Zeebe workflow in a synchronous REST req/res pattern.
 
+It's a Proof-of-Concept, and not intended for production use without further testing.
+
 You may initiate a workflow in Zeebe in response to a REST request, and want to return the outcome of that workflow in the REST response. If your REST front-end is scalable, you need some kind of session affinity.
+
+## Install
+
+To install to your project:
+
+```
+npm i zeebe-node-affinity
+```
+
+## Usage
 
 Zeebe Node Affinity uses a websocket server to distribute workflow outcomes to interested clients. The `zeebe-node-affinity` library provides the `createWorkflowWithAffinity` method that extends the `createWorkflow` method with a callback. This callback is executed in-memory with the final variable state of the workflow. It can be used like this:
 
