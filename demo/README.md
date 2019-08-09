@@ -10,7 +10,7 @@ You can run a demo in the `demo`  directory. You will need three terminals.
 Start a Zeebe broker:
 
 ```
-docker run -it --name zeebe -p 26500:26500 camunda/zeebe:0.18.0
+docker run -it --name zeebe -p 26500:26500 camunda/zeebe:0.20.0
 ```
 
 ### Terminal 2
