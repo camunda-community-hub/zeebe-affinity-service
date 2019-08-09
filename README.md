@@ -113,6 +113,14 @@ node affinity-server.js
 ```
 
 ### Terminal 3
+Start the Affinity Worker:
+
+```
+cd demo
+node affinity-worker.js
+```
+
+### Terminal 4
 Start the demo workers / REST Server / REST Client:
 
 ```
