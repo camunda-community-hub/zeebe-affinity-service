@@ -56,7 +56,7 @@ export class ZBAffinityClient extends ZBClient {
       }
       publishWorkflowOutcomeToAffinityService(
         {
-          workflowInstanceKey: job.jobHeaders.workflowInstanceKey,
+          workflowInstanceKey: job.workflowInstanceKey,
           variables: job.variables
         },
         this.affinityService

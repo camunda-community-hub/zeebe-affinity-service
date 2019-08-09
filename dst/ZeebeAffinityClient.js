@@ -46,7 +46,7 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
                     }
                 }
                 WebSocketAPI_1.publishWorkflowOutcomeToAffinityService({
-                    workflowInstanceKey: job.jobHeaders.workflowInstanceKey,
+                    workflowInstanceKey: job.workflowInstanceKey,
                     variables: job.variables
                 }, this.affinityService);
                 complete.success();
