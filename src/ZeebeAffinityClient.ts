@@ -2,7 +2,8 @@ import promiseRetry from "promise-retry";
 import { v4 as uuid } from "uuid";
 import WebSocket from "ws";
 import { ZBClient } from "zeebe-node";
-import { KeyedObject, ZBClientOptions } from "zeebe-node/dist/lib/interfaces";
+import { KeyedObject } from "zeebe-node/dist/lib/interfaces";
+import { ZBClientOptions } from 'zeebe-node/dist/lib/interfaces-published-contract';
 import {
   demarshalWorkflowOutcome,
   publishWorkflowOutcomeToAffinityService,
