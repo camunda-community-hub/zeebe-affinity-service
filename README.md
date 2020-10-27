@@ -16,6 +16,8 @@ npm i zeebe-node-affinity
 
 ## Usage
 
+### Websocket
+
 Zeebe Node Affinity uses a websocket server to distribute workflow outcomes to interested clients. The `zeebe-node-affinity` library provides the `createWorkflowWithAffinity` method that extends the `createWorkflow` method with a callback. This callback is executed in-memory with the final variable state of the workflow. It can be used like this:
 
 ```typescript
@@ -82,6 +84,60 @@ The Affinity Worker will now service this task-type, and communicate the workflo
 We throw in the constructor if we cannot contact the affinity server within `affinityTimeout` milliseconds. We don't want the worker completing jobs if it cannot communicate the results to the Affinity Server.
 
 Similarly, the worker will fail jobs that it takes where it cannot communicate the outcome to an Affinity Server. This will cause an incident to be raised if the connection is not re-established.
+
+### Redis
+
+
+Zeebe Node Affinity also allow to use a Redis pub/sub system to distribute workflow outcomes to interested clients. The `zeebe-node-affinity` library provides `RedisAffinity` and the `createWorkflowInstanceWithAffinity` method that extends the `createWorkflow` method with a callback. This callback is executed in-memory with the final variable state of the workflow. It can be used like this:
+
+Create workflow with redis affinity:
+
+```typescript
+const { RedisAffinity } = require("zeebe-node-affinity") 
+
+const zbcRedis = new RedisAffinity(ZEEBE_GATEWAY, { host: REDIS_HOST, password: REDIS_AUTH });
+
+zbcRedis.createWorkflowInstanceWithAffinity({
+        bpmnProcessId: workflowName,
+        variables: {
+        correlationKey,
+        userInputText: userInput,
+        chatFinished,
+        },
+        cb: (message) => res.send(message),
+    })
+    .catch(e => console.log("Could not create a workflow instance!"));
+```
+
+To communicate the outcome of the workflow to the Zeebe Affinity Client, you need to put a task as the last task in your workflow, and create a Zeebe Affinity worker to service it:
+
+```typescript
+const { RedisAffinity } = require("zeebe-node-affinity");
+
+const zbcRedis = new RedisAffinity(ZEEBE_GATEWAY, { host: REDIS_HOST, password: REDIS_AUTH });
+
+const zbW = zbcRedis.createAffinityWorker('publish-outcome')
+                .catch(e => console.log("Could not create affinity worker!"));
+```
+
+Publish message with redis affinity:
+
+```typescript
+zbcRedis.publishMessageWithAffinity({
+        correlationKey,
+        messageId: uuidv4(),
+        name: 'chat-message',
+        variables: {
+        status: 'PROCESSED',
+        userInputText: userInput,
+        chatFinished,
+        },
+        workflowInstanceKey,
+        timeToLive: Duration.seconds.of(10), // seconds
+        cb: (message) => res.send(message),
+    })
+    .catch(e => console.log("Could not publish message!"));
+```
 
 ## Scaling
 
