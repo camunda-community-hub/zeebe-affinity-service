@@ -82,8 +82,7 @@ export class ZBAffinityClient extends ZBClient {
     // TODO check for error creating workflow to prevent registering callback?
     const wfi = await super.createWorkflowInstance(
       bpmnProcessId,
-      variables,
-      version
+      variables
     );
 
     if (this.affinityService) {

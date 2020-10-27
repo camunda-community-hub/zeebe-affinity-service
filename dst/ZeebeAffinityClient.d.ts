@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import WebSocket from "ws";
 import { ZBClient } from "zeebe-node";
-import { KeyedObject } from 'zeebe-node/dist/lib/interfaces';
+import { KeyedObject } from "zeebe-node/dist/lib/interfaces";
 import { ZBClientOptions } from 'zeebe-node/dist/lib/interfaces-published-contract';
 import { WorkflowOutcome } from "./WebSocketAPI";
 interface ZBAffinityClientOptions extends ZBClientOptions {
@@ -24,7 +24,7 @@ export declare class ZBAffinityClient extends ZBClient {
         variables: Variables;
         version?: number;
         cb: (workflowOutcome: WorkflowOutcome) => void;
-    }): Promise<import("zeebe-node/dist/lib/interfaces-grpc").CreateWorkflowInstanceResponse>;
+    }): Promise<import("zeebe-node").CreateWorkflowInstanceResponse>;
     waitForAffinity(): Promise<void>;
     private throwNoConnection;
     private createAffinityService;
