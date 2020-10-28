@@ -97,16 +97,19 @@ const { RedisAffinity } = require("zeebe-node-affinity")
 
 const zbcRedis = new RedisAffinity(ZEEBE_GATEWAY, { host: REDIS_HOST, password: REDIS_AUTH });
 
-zbcRedis.createWorkflowInstanceWithAffinity({
-        bpmnProcessId: workflowName,
-        variables: {
-        correlationKey,
-        userInputText: userInput,
-        chatFinished,
-        },
-        cb: (message) => res.send(message),
-    })
-    .catch(e => console.log("Could not create a workflow instance!"));
+
+async function handleRequest(req, res) {
+    zbcRedis.createWorkflowInstanceWithAffinity({
+            bpmnProcessId: workflowName,
+            variables: {
+            correlationKey,
+            userInputText: userInput,
+            chatFinished,
+            },
+            cb: (message) => res.send(message),
+        })
+        .catch(e => console.log("Could not create a workflow instance!"));
+}
 ```
 
 To communicate the outcome of the workflow to the Zeebe Affinity Client, you need to put a task as the last task in your workflow, and create a Zeebe Affinity worker to service it:
@@ -123,20 +126,23 @@ const zbW = zbcRedis.createAffinityWorker('publish-outcome')
 Publish message with redis affinity:
 
 ```typescript
-zbcRedis.publishMessageWithAffinity({
-        correlationKey,
-        messageId: uuidv4(),
-        name: 'chat-message',
-        variables: {
-        status: 'PROCESSED',
-        userInputText: userInput,
-        chatFinished,
-        },
-        workflowInstanceKey,
-        timeToLive: Duration.seconds.of(10), // seconds
-        cb: (message) => res.send(message),
-    })
-    .catch(e => console.log("Could not publish message!"));
+
+async function handleRequest(req, res) {
+    zbcRedis.publishMessageWithAffinity({
+            correlationKey,
+            messageId: uuidv4(),
+            name: 'chat-message',
+            variables: {
+            status: 'PROCESSED',
+            userInputText: userInput,
+            chatFinished,
+            },
+            workflowInstanceKey,
+            timeToLive: Duration.seconds.of(10), // seconds
+            cb: (message) => res.send(message),
+        })
+        .catch(e => console.log("Could not publish message!"));
+}
 ```
 
 ## Scaling
