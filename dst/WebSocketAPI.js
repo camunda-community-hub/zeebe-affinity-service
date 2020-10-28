@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.publishWorkflowOutcomeToAffinityService = exports.demarshalWorkflowOutcome = exports.broadcastWorkflowOutcome = exports.registerClient = exports.registerWorker = exports.AffinityAPIMessageType = void 0;
 const ws_1 = __importDefault(require("ws"));
 var AffinityAPIMessageType;
 (function (AffinityAPIMessageType) {
@@ -30,7 +31,7 @@ exports.broadcastWorkflowOutcome = broadcastWorkflowOutcome;
 function demarshalWorkflowOutcome(data) {
     const message = JSON.parse(data.toString());
     return (message.type = AffinityAPIMessageType.WORKFLOW_OUTCOME
-        ? Object.assign({}, message, { type: undefined }) : undefined);
+        ? Object.assign(Object.assign({}, message), { type: undefined }) : undefined);
 }
 exports.demarshalWorkflowOutcome = demarshalWorkflowOutcome;
 function publishWorkflowOutcomeToAffinityService(workflowOutcome, ws) {

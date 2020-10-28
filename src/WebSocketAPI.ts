@@ -1,5 +1,4 @@
 import WebSocket from "ws";
-import { WorkflowOutcomeMessage } from "./WebSocketAPI";
 
 export enum AffinityAPIMessageType {
   WORKFLOW_OUTCOME = "WORKFLOW_OUTCOME",
