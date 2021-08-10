@@ -48,8 +48,12 @@ export class RedisAffinity extends ZBClient {
     // create worker (ZB client)
     super.createWorker(workerId, taskType, async (job, complete) => {
       console.log('Publish message on channel: ' + job.workflowInstanceKey);
-      this.publisher.publish(job.workflowInstanceKey, JSON.stringify(job.variables));
-      complete.success();
+      const updatedVars = {
+          ...job?.variables,
+          workflowInstanceKey: job?.workflowInstanceKey,
+      };
+      this.publisher.publish(job.workflowInstanceKey, JSON.stringify(updatedVars));
+      await complete.success(updatedVars);
     });
   }
 
