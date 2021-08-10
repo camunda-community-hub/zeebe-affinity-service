@@ -50,7 +50,7 @@ export class RedisAffinity extends ZBClient {
       console.log('Publish message on channel: ' + job.workflowInstanceKey);
       const updatedVars = {
           ...job?.variables,
-          workflowInstanceKey: job?.workflowInstanceKey,
+          workflowInstanceKey: job.workflowInstanceKey,
       };
       this.publisher.publish(job.workflowInstanceKey, JSON.stringify(updatedVars));
       await complete.success(updatedVars);
