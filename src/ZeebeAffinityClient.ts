@@ -138,7 +138,7 @@ export class ZBAffinityClient extends ZBClient {
           });
           this.affinityService.on("open", () => {
             setUpConnection();
-            resolve();
+            resolve(null);
           });
         } catch (e) {
           console.log(e.message);
