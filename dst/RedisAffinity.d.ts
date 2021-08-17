@@ -1,11 +1,12 @@
-import { ZBClient } from 'zeebe-node';
-import { KeyedObject } from 'zeebe-node/dist/lib/interfaces';
+import { ClientOpts, RedisClient } from 'redis';
+import { KeyedObject, ZBClient } from 'zeebe-node';
 import { WorkflowOutcome } from "./WebSocketAPI";
-import { ClientOpts } from 'redis';
 export declare class RedisAffinity extends ZBClient {
-    private subscriber;
-    private publisher;
-    private affinityCallbacks;
+    subscriber: RedisClient;
+    publisher: RedisClient;
+    affinityCallbacks: {
+        [workflowInstanceKey: string]: (workflowOutcome: WorkflowOutcome) => void;
+    };
     constructor(gatewayAddress: string, redisOptions: ClientOpts);
     createAffinityWorker(taskType: string): Promise<void>;
     createWorkflowInstanceWithAffinity<Variables = KeyedObject>({ bpmnProcessId, variables, cb, }: {
@@ -21,4 +22,5 @@ export declare class RedisAffinity extends ZBClient {
         workflowInstanceKey: string;
         cb: (workflowOutcome: WorkflowOutcome) => void;
     }): Promise<void>;
+    cleanup(channel: string): void;
 }

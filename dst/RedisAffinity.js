@@ -13,6 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RedisAffinity = void 0;
+/* eslint-disable no-unused-vars */
 const redis_1 = __importDefault(require("redis"));
 const uuid_1 = require("uuid");
 const zeebe_node_1 = require("zeebe-node");
@@ -24,18 +25,22 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
         this.subscriber = redis_1.default.createClient(redisOptions);
         this.publisher = redis_1.default.createClient(redisOptions);
         this.affinityCallbacks = {};
-        this.subscriber.on('error', function (error) {
+        this.subscriber.on('connected', (error) => {
+            console.log('Subscriber connected');
+        });
+        this.publisher.on('connected', (error) => {
+            console.log('Publisher connected');
+        });
+        this.subscriber.on('error', (error) => {
             console.error(error);
         });
-        this.publisher.on('error', function (error) {
+        this.publisher.on('error', (error) => {
             console.error(error);
         });
         this.subscriber.on('message', (channel, message) => {
-            console.log('subscriber received message in channel ' + channel);
-            this.subscriber.unsubscribe(channel);
+            console.log(`subscriber received message in channel ${channel}`);
             try {
                 this.affinityCallbacks[channel](JSON.parse(message));
-                delete this.affinityCallbacks[channel];
             }
             catch (err) {
                 console.error(err);
@@ -50,9 +55,10 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
             const workerId = uuid_1.v4();
             // create worker (ZB client)
             _super.createWorker.call(this, workerId, taskType, (job, complete) => __awaiter(this, void 0, void 0, function* () {
-                console.log('Publish message on channel: ' + job.workflowInstanceKey);
-                this.publisher.publish(job.workflowInstanceKey, JSON.stringify(job.variables));
-                complete.success();
+                console.log(`Publish message on channel: ${job.workflowInstanceKey}`);
+                const updatedVars = Object.assign(Object.assign({}, job === null || job === void 0 ? void 0 : job.variables), { workflowInstanceKey: job === null || job === void 0 ? void 0 : job.workflowInstanceKey });
+                this.publisher.publish(job.workflowInstanceKey, JSON.stringify(updatedVars));
+                yield complete.success(updatedVars);
             }));
         });
     }
@@ -66,7 +72,7 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
                 const wfi = yield _super.createWorkflowInstance.call(this, bpmnProcessId, variables);
                 this.affinityCallbacks[wfi.workflowInstanceKey] = cb;
                 this.subscriber.subscribe(wfi.workflowInstanceKey, () => {
-                    console.log('Subscribe to channel ' + wfi.workflowInstanceKey);
+                    console.log(`Subscribe to channel ${wfi.workflowInstanceKey}`);
                 });
             }
             catch (err) {
@@ -80,7 +86,7 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
             publishMessage: { get: () => super.publishMessage }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            _super.publishMessage.call(this, {
+            yield _super.publishMessage.call(this, {
                 correlationKey,
                 messageId,
                 name,
@@ -90,9 +96,19 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
             this.affinityCallbacks[workflowInstanceKey] = cb;
             // TODO: add error message if missing workflowInstanceKey
             this.subscriber.subscribe(workflowInstanceKey, () => {
-                console.log('Subscribe to channel ' + workflowInstanceKey);
+                console.log(`Subscribe to channel ${workflowInstanceKey}`);
             });
         });
+    }
+    cleanup(channel) {
+        console.log(`Unsubscribe from channel ${channel} and removing affinity callbacks.`);
+        this.subscriber.unsubscribe(channel);
+        try {
+            delete this.affinityCallbacks[channel];
+        }
+        catch (err) {
+            console.error(err);
+        }
     }
 }
 exports.RedisAffinity = RedisAffinity;

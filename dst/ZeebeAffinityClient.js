@@ -106,7 +106,7 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
                     });
                     this.affinityService.on("open", () => {
                         setUpConnection();
-                        resolve();
+                        resolve(null);
                     });
                 }
                 catch (e) {
