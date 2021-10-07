@@ -21,22 +21,22 @@ class ZBAffinityServer {
         if (this.options.statsInterval) {
             setInterval(() => this.outputStats(), this.options.statsInterval);
         }
-        this.logLevel = this.options.logLevel || "INFO";
+        this.logLevel = this.options.logLevel || 'INFO';
     }
     listen(port, cb) {
         this.wss = new ws_1.default.Server({
             port,
-            perMessageDeflate: false
+            perMessageDeflate: false,
         });
         this.removeDeadConnections = setInterval(() => {
-            this.debug("Reaping dead connections");
-            const reaper = ws => {
+            this.debug('Reaping dead connections');
+            const reaper = (ws) => {
                 this.debug({
                     ws: {
                         isAlive: ws.isAlive,
                         isClient: ws.isClient,
-                        isWorker: ws.isWorker
-                    }
+                        isWorker: ws.isWorker,
+                    },
                 });
                 if (ws.isAlive === false) {
                     if (ws.isClient) {
@@ -53,12 +53,12 @@ class ZBAffinityServer {
             };
             Object.values(this.connections).forEach(reaper);
         }, 30000);
-        this.wss.on("connection", w => {
+        this.wss.on('connection', (w) => {
             const ws = w;
             ws.isAlive = true;
-            ws.on("pong", heartbeat);
+            ws.on('pong', heartbeat);
             ws.ping(noop); // @DEBUG
-            ws.on("message", message => {
+            ws.on('message', (message) => {
                 const msg = JSON.parse(message.toString());
                 switch (msg.type) {
                     case WebSocketAPI_1.AffinityAPIMessageType.REGISTER_CLIENT:
@@ -67,7 +67,7 @@ class ZBAffinityServer {
                         ws.uuid = clientId;
                         this.clients[clientId] = ws;
                         this.connections[clientId] = ws;
-                        this.debug("New client connected");
+                        this.debug('New client connected');
                         break;
                     case WebSocketAPI_1.AffinityAPIMessageType.REGISTER_WORKER:
                         ws.isWorker = true;
@@ -75,10 +75,10 @@ class ZBAffinityServer {
                         ws.uuid = workerId;
                         this.workers[workerId] = ws;
                         this.connections[workerId] = ws;
-                        this.debug("New worker connected");
+                        this.debug('New worker connected');
                         break;
-                    case WebSocketAPI_1.AffinityAPIMessageType.WORKFLOW_OUTCOME:
-                        WebSocketAPI_1.broadcastWorkflowOutcome(this.clients, msg);
+                    case WebSocketAPI_1.AffinityAPIMessageType.PROCESS_OUTCOME:
+                        WebSocketAPI_1.broadcastProcessOutcome(this.clients, msg);
                         break;
                 }
             });
@@ -89,11 +89,11 @@ class ZBAffinityServer {
     }
     stats() {
         return {
-            time: dayjs_1.default().format("{YYYY} MM-DDTHH:mm:ss SSS [Z] A"),
+            time: dayjs_1.default().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'),
             workerCount: Object.keys(this.workers).length,
             clientCount: Object.keys(this.clients).length,
             cpu: process.cpuUsage(),
-            memory: process.memoryUsage()
+            memory: process.memoryUsage(),
         };
     }
     outputStats() {
@@ -108,7 +108,7 @@ class ZBAffinityServer {
         console.log(args);
     }
     debug(...args) {
-        if (this.logLevel === "DEBUG") {
+        if (this.logLevel === 'DEBUG') {
             console.log(args);
         }
     }

@@ -15,9 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.RedisAffinity = void 0;
 /* eslint-disable no-unused-vars */
 const redis_1 = __importDefault(require("redis"));
-const uuid_1 = require("uuid");
 const zeebe_node_1 = require("zeebe-node");
-// TODO: handle errors if missing parameters (example: workflow instance key)
+// TODO: handle errors if missing parameters (example: process instance key)
 // TODO: purge the service
 class RedisAffinity extends zeebe_node_1.ZBClient {
     constructor(gatewayAddress, redisOptions) {
@@ -52,27 +51,35 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
             createWorker: { get: () => super.createWorker }
         });
         return __awaiter(this, void 0, void 0, function* () {
-            const workerId = uuid_1.v4();
             // create worker (ZB client)
-            _super.createWorker.call(this, workerId, taskType, (job, complete) => __awaiter(this, void 0, void 0, function* () {
-                console.log(`Publish message on channel: ${job.workflowInstanceKey}`);
-                const updatedVars = Object.assign(Object.assign({}, job === null || job === void 0 ? void 0 : job.variables), { workflowInstanceKey: job === null || job === void 0 ? void 0 : job.workflowInstanceKey });
-                this.publisher.publish(job.workflowInstanceKey, JSON.stringify(updatedVars));
-                yield complete.success(updatedVars);
-            }));
+            _super.createWorker.call(this, {
+                taskType,
+                taskHandler: (job, _, worker) => __awaiter(this, void 0, void 0, function* () {
+                    try {
+                        console.log(`Publish message on channel: ${job.processInstanceKey}`);
+                        const updatedVars = Object.assign(Object.assign({}, job === null || job === void 0 ? void 0 : job.variables), { processInstanceKey: job === null || job === void 0 ? void 0 : job.processInstanceKey });
+                        this.publisher.publish(job.processInstanceKey, JSON.stringify(updatedVars));
+                        return yield job.complete(updatedVars);
+                    }
+                    catch (error) {
+                        console.error(`Error while publishing message on channel: ${job.processInstanceKey}`);
+                        return job.fail(error.message);
+                    }
+                }),
+            });
         });
     }
-    createWorkflowInstanceWithAffinity({ bpmnProcessId, variables, cb, }) {
+    createProcessInstanceWithAffinity({ bpmnProcessId, variables, cb, }) {
         const _super = Object.create(null, {
-            createWorkflowInstance: { get: () => super.createWorkflowInstance }
+            createProcessInstance: { get: () => super.createProcessInstance }
         });
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // create workflow instance (ZB client)
-                const wfi = yield _super.createWorkflowInstance.call(this, bpmnProcessId, variables);
-                this.affinityCallbacks[wfi.workflowInstanceKey] = cb;
-                this.subscriber.subscribe(wfi.workflowInstanceKey, () => {
-                    console.log(`Subscribe to channel ${wfi.workflowInstanceKey}`);
+                // create process instance (ZB client)
+                const wfi = yield _super.createProcessInstance.call(this, bpmnProcessId, variables);
+                this.affinityCallbacks[wfi.processInstanceKey] = cb;
+                this.subscriber.subscribe(wfi.processInstanceKey, () => {
+                    console.log(`Subscribe to channel ${wfi.processInstanceKey}`);
                 });
             }
             catch (err) {
@@ -81,7 +88,7 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
             }
         });
     }
-    publishMessageWithAffinity({ correlationKey, messageId, name, variables, workflowInstanceKey, cb, }) {
+    publishMessageWithAffinity({ correlationKey, messageId, name, variables, processInstanceKey, cb, }) {
         const _super = Object.create(null, {
             publishMessage: { get: () => super.publishMessage }
         });
@@ -93,10 +100,10 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
                 variables,
                 timeToLive: zeebe_node_1.Duration.seconds.of(10),
             });
-            this.affinityCallbacks[workflowInstanceKey] = cb;
-            // TODO: add error message if missing workflowInstanceKey
-            this.subscriber.subscribe(workflowInstanceKey, () => {
-                console.log(`Subscribe to channel ${workflowInstanceKey}`);
+            this.affinityCallbacks[processInstanceKey] = cb;
+            // TODO: add error message if missing processInstanceKey
+            this.subscriber.subscribe(processInstanceKey, () => {
+                console.log(`Subscribe to channel ${processInstanceKey}`);
             });
         });
     }

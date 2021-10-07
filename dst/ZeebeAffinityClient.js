@@ -14,7 +14,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ZBAffinityClient = void 0;
 const promise_retry_1 = __importDefault(require("promise-retry"));
-const uuid_1 = require("uuid");
 const ws_1 = __importDefault(require("ws"));
 const zeebe_node_1 = require("zeebe-node");
 const WebSocketAPI_1 = require("./WebSocketAPI");
@@ -23,11 +22,10 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
     constructor(gatewayAddress, options) {
         super(gatewayAddress, options);
         if (!(options && options.affinityServiceUrl)) {
-            throw new Error("This ZBAffinityClient constructor options must have a url for a Zeebe Affinity Server!");
+            throw new Error('This ZBAffinityClient constructor options must have a url for a Zeebe Affinity Server!');
         }
         this.affinityServiceUrl = options && options.affinityServiceUrl;
-        this.affinityTimeout =
-            (options && options.affinityTimeout) || AFFINITY_TIMEOUT_DEFAULT;
+        this.affinityTimeout = (options && options.affinityTimeout) || AFFINITY_TIMEOUT_DEFAULT;
         this.affinityCallbacks = {};
         this.createAffinityService();
     }
@@ -38,47 +36,48 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.waitForAffinity();
             WebSocketAPI_1.registerWorker(this.affinityService);
-            _super.createWorker.call(this, uuid_1.v4(), taskType, (job, complete) => __awaiter(this, void 0, void 0, function* () {
-                if (this.affinityService.readyState !== ws_1.default.OPEN) {
-                    try {
-                        yield this.waitForAffinity();
+            _super.createWorker.call(this, {
+                taskType,
+                taskHandler: (job, _, worker) => __awaiter(this, void 0, void 0, function* () {
+                    if (this.affinityService.readyState !== ws_1.default.OPEN) {
+                        try {
+                            yield this.waitForAffinity();
+                        }
+                        catch (e) {
+                            return job.fail(`Could not contact Affinity Server at ${this.affinityServiceUrl}`);
+                        }
                     }
-                    catch (e) {
-                        return complete.failure(`Could not contact Affinity Server at ${this.affinityServiceUrl}`);
-                    }
-                }
-                WebSocketAPI_1.publishWorkflowOutcomeToAffinityService({
-                    workflowInstanceKey: job.workflowInstanceKey,
-                    variables: job.variables
-                }, this.affinityService);
-                complete.success();
-            }));
+                    WebSocketAPI_1.publishProcessOutcomeToAffinityService({
+                        processInstanceKey: job.processInstanceKey,
+                        variables: job.variables,
+                    }, this.affinityService);
+                    return job.complete();
+                }),
+            });
         });
     }
-    createWorkflowInstanceWithAffinity({ bpmnProcessId, variables, version, cb }) {
+    createProcessInstanceWithAffinity({ bpmnProcessId, variables, version, cb, }) {
         const _super = Object.create(null, {
-            createWorkflowInstance: { get: () => super.createWorkflowInstance }
+            createProcessInstance: { get: () => super.createProcessInstance }
         });
         return __awaiter(this, void 0, void 0, function* () {
             yield this.waitForAffinity();
-            // TODO check for error creating workflow to prevent registering callback?
-            const wfi = yield _super.createWorkflowInstance.call(this, bpmnProcessId, variables);
+            // TODO check for error creating process to prevent registering callback?
+            const wfi = yield _super.createProcessInstance.call(this, bpmnProcessId, variables);
             if (this.affinityService) {
-                this.affinityCallbacks[wfi.workflowInstanceKey] = cb; // Register callback for application code
+                this.affinityCallbacks[wfi.processInstanceKey] = cb; // Register callback for application code
             }
             return wfi;
         });
     }
     waitForAffinity() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this.affinityService ||
-                this.affinityService.readyState !== ws_1.default.OPEN) {
-                const sleep = waitTimeInMs => new Promise(resolve => setTimeout(resolve, waitTimeInMs));
+            if (!this.affinityService || this.affinityService.readyState !== ws_1.default.OPEN) {
+                const sleep = (waitTimeInMs) => new Promise((resolve) => setTimeout(resolve, waitTimeInMs));
                 const timeoutFn = setTimeout(() => {
                     this.throwNoConnection();
                 }, this.affinityTimeout);
-                while (!this.affinityService ||
-                    this.affinityService.readyState !== ws_1.default.OPEN) {
+                while (!this.affinityService || this.affinityService.readyState !== ws_1.default.OPEN) {
                     yield sleep(200);
                 }
                 clearTimeout(timeoutFn);
@@ -93,18 +92,18 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
             if (!this.affinityServiceUrl) {
                 return;
             }
-            console.log("Creating affinity connection");
+            console.log('Creating affinity connection');
             const setUpConnection = this.setUpConnection.bind(this);
             yield promise_retry_1.default((retry, number) => new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 try {
                     this.affinityService = new ws_1.default(this.affinityServiceUrl, {
-                        perMessageDeflate: false
+                        perMessageDeflate: false,
                     });
-                    this.affinityService.on("error", err => {
-                        console.log("ERRER", err);
+                    this.affinityService.on('error', (err) => {
+                        console.log('ERRER', err);
                         reject();
                     });
-                    this.affinityService.on("open", () => {
+                    this.affinityService.on('open', () => {
                         setUpConnection();
                         resolve(null);
                     });
@@ -128,13 +127,13 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
         WebSocketAPI_1.registerClient(this.affinityService);
         console.log(`Connected to Zeebe Affinity Service at ${this.affinityServiceUrl}`);
         this.heartbeat();
-        this.affinityService.on("ping", this.heartbeat.bind(this));
-        this.affinityService.on("message", this.handleMessage.bind(this));
+        this.affinityService.on('ping', this.heartbeat.bind(this));
+        this.affinityService.on('message', this.handleMessage.bind(this));
     }
     handleMessage(data) {
-        const outcome = WebSocketAPI_1.demarshalWorkflowOutcome(data);
+        const outcome = WebSocketAPI_1.demarshalProcessOutcome(data);
         if (outcome) {
-            const wfi = outcome.workflowInstanceKey;
+            const wfi = outcome.processInstanceKey;
             if (this.affinityCallbacks[wfi]) {
                 this.affinityCallbacks[wfi](outcome);
                 this.affinityCallbacks[wfi] = undefined; // Object.delete degrades performance with large objects
