@@ -70,7 +70,7 @@ export class ZBAffinityServer {
                     return ws.terminate();
                 }
                 ws.isAlive = false;
-                ws.ping(noop);
+                ws.ping();
             };
             Object.values(this.connections).forEach(reaper);
         }, 30000);
@@ -79,7 +79,7 @@ export class ZBAffinityServer {
             const ws = w as WebSocketWithAlive;
             ws.isAlive = true;
             ws.on('pong', heartbeat);
-            ws.ping(noop); // @DEBUG
+            ws.ping(); // @DEBUG
             ws.on('message', (message) => {
                 const msg:
                     | RegisterClientMessage
