@@ -23,7 +23,7 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
     }
     async createAffinityWorker(taskType) {
         await this.waitForAffinity();
-        (0, WebSocketAPI_1.registerWorker)(this.affinityService);
+        WebSocketAPI_1.registerWorker(this.affinityService);
         super.createWorker({
             taskType,
             taskHandler: async (job) => {
@@ -35,7 +35,7 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
                         return job.fail(`Could not contact Affinity Server at ${this.affinityServiceUrl}`);
                     }
                 }
-                (0, WebSocketAPI_1.publishProcessOutcomeToAffinityService)({
+                WebSocketAPI_1.publishProcessOutcomeToAffinityService({
                     processInstanceKey: job.processInstanceKey,
                     variables: job.variables,
                 }, this.affinityService);
@@ -75,7 +75,7 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
         }
         console.log('Creating affinity connection');
         const setUpConnection = this.setUpConnection.bind(this);
-        await (0, promise_retry_1.default)((retry) => new Promise((resolve, reject) => {
+        await promise_retry_1.default((retry) => new Promise((resolve, reject) => {
             try {
                 this.affinityService = new ws_1.default(this.affinityServiceUrl, {
                     perMessageDeflate: false,
@@ -104,14 +104,14 @@ class ZBAffinityClient extends zeebe_node_1.ZBClient {
         }, 30000 + 1000);
     }
     setUpConnection() {
-        (0, WebSocketAPI_1.registerClient)(this.affinityService);
+        WebSocketAPI_1.registerClient(this.affinityService);
         console.log(`Connected to Zeebe Affinity Service at ${this.affinityServiceUrl}`);
         this.heartbeat();
         this.affinityService.on('ping', this.heartbeat.bind(this));
         this.affinityService.on('message', this.handleMessage.bind(this));
     }
     handleMessage(data) {
-        const outcome = (0, WebSocketAPI_1.demarshalProcessOutcome)(data);
+        const outcome = WebSocketAPI_1.demarshalProcessOutcome(data);
         if (outcome) {
             const wfi = outcome.processInstanceKey;
             if (this.affinityCallbacks[wfi]) {

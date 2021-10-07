@@ -79,7 +79,7 @@ class ZBAffinityServer {
                         this.debug('New worker connected');
                         break;
                     case WebSocketAPI_1.AffinityAPIMessageType.PROCESS_OUTCOME:
-                        (0, WebSocketAPI_1.broadcastProcessOutcome)(this.clients, msg);
+                        WebSocketAPI_1.broadcastProcessOutcome(this.clients, msg);
                         break;
                 }
             });
@@ -90,7 +90,7 @@ class ZBAffinityServer {
     }
     stats() {
         return {
-            time: (0, dayjs_1.default)().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'),
+            time: dayjs_1.default().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'),
             workerCount: Object.keys(this.workers).length,
             clientCount: Object.keys(this.clients).length,
             cpu: process.cpuUsage(),

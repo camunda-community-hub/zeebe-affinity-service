@@ -6,15 +6,27 @@ It's a Proof-of-Concept, and not intended for production use without further tes
 
 You may initiate a process in Zeebe in response to a REST request, and want to return the outcome of that process in the REST response. If your REST front-end is scalable, you need some kind of session affinity.
 
+## Version Compatibility
+
+For Zeebe 0.x, use [version 0.20 of this package](https://www.npmjs.com/package/zeebe-node-affinity/v/0.20.0).
+
 ## Install
 
-To install to your project:
+To install to your project, for Zeebe 1.x:
 
 ```
 npm i zeebe-node-affinity
 ```
 
+For Zeebe 0.x:
+
+```
+npm i zeebe-node-affinity@0.20
+```
+
 ## Usage
+
+For Zeebe 0.x, refer to [the README for the 0.20 package](https://www.npmjs.com/package/zeebe-node-affinity/v/0.20.0).
 
 ### Websocket
 
