@@ -8,7 +8,6 @@ const dayjs_1 = __importDefault(require("dayjs"));
 const ws_1 = __importDefault(require("ws"));
 const WebSocketAPI_1 = require("./WebSocketAPI");
 const uuid = require("uuid");
-function noop() { }
 function heartbeat() {
     this.isAlive = true;
 }
@@ -49,7 +48,7 @@ class ZBAffinityServer {
                     return ws.terminate();
                 }
                 ws.isAlive = false;
-                ws.ping(noop);
+                ws.ping();
             };
             Object.values(this.connections).forEach(reaper);
         }, 30000);
@@ -57,12 +56,13 @@ class ZBAffinityServer {
             const ws = w;
             ws.isAlive = true;
             ws.on('pong', heartbeat);
-            ws.ping(noop); // @DEBUG
+            ws.ping(); // @DEBUG
             ws.on('message', (message) => {
                 const msg = JSON.parse(message.toString());
                 switch (msg.type) {
                     case WebSocketAPI_1.AffinityAPIMessageType.REGISTER_CLIENT:
                         ws.isClient = true;
+                        // eslint-disable-next-line no-case-declarations
                         const clientId = ws.uuid || uuid();
                         ws.uuid = clientId;
                         this.clients[clientId] = ws;
@@ -71,6 +71,7 @@ class ZBAffinityServer {
                         break;
                     case WebSocketAPI_1.AffinityAPIMessageType.REGISTER_WORKER:
                         ws.isWorker = true;
+                        // eslint-disable-next-line no-case-declarations
                         const workerId = ws.uuid || uuid();
                         ws.uuid = workerId;
                         this.workers[workerId] = ws;
@@ -78,7 +79,7 @@ class ZBAffinityServer {
                         this.debug('New worker connected');
                         break;
                     case WebSocketAPI_1.AffinityAPIMessageType.PROCESS_OUTCOME:
-                        WebSocketAPI_1.broadcastProcessOutcome(this.clients, msg);
+                        (0, WebSocketAPI_1.broadcastProcessOutcome)(this.clients, msg);
                         break;
                 }
             });
@@ -89,7 +90,7 @@ class ZBAffinityServer {
     }
     stats() {
         return {
-            time: dayjs_1.default().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'),
+            time: (0, dayjs_1.default)().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'),
             workerCount: Object.keys(this.workers).length,
             clientCount: Object.keys(this.clients).length,
             cpu: process.cpuUsage(),

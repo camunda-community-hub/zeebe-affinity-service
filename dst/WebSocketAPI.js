@@ -20,7 +20,10 @@ function registerClient(ws) {
 }
 exports.registerClient = registerClient;
 function broadcastProcessOutcome(clients, processOutcome) {
-    const message = Object.assign({ type: AffinityAPIMessageType.PROCESS_OUTCOME }, processOutcome);
+    const message = {
+        type: AffinityAPIMessageType.PROCESS_OUTCOME,
+        ...processOutcome,
+    };
     Object.values(clients).forEach((client) => {
         if (client.readyState === ws_1.default.OPEN) {
             client.send(JSON.stringify(message));
@@ -30,11 +33,16 @@ function broadcastProcessOutcome(clients, processOutcome) {
 exports.broadcastProcessOutcome = broadcastProcessOutcome;
 function demarshalProcessOutcome(data) {
     const message = JSON.parse(data.toString());
-    return (message.type = AffinityAPIMessageType.PROCESS_OUTCOME ? Object.assign(Object.assign({}, message), { type: undefined }) : undefined);
+    return (message.type = AffinityAPIMessageType.PROCESS_OUTCOME
+        ? { ...message, type: undefined }
+        : undefined);
 }
 exports.demarshalProcessOutcome = demarshalProcessOutcome;
 function publishProcessOutcomeToAffinityService(processOutcome, ws) {
-    const processOutcomeMessage = Object.assign({ type: AffinityAPIMessageType.PROCESS_OUTCOME }, processOutcome);
+    const processOutcomeMessage = {
+        type: AffinityAPIMessageType.PROCESS_OUTCOME,
+        ...processOutcome,
+    };
     ws.send(JSON.stringify(processOutcomeMessage));
 }
 exports.publishProcessOutcomeToAffinityService = publishProcessOutcomeToAffinityService;

@@ -19,12 +19,12 @@ export declare class ZBAffinityClient extends ZBClient {
     pingTimeout: NodeJS.Timer;
     constructor(gatewayAddress: string, options: ZBAffinityClientOptions);
     createAffinityWorker(taskType: string): Promise<void>;
-    createProcessInstanceWithAffinity<Variables = KeyedObject>({ bpmnProcessId, variables, version, cb, }: {
+    createProcessInstanceWithAffinity<Variables = KeyedObject>({ bpmnProcessId, variables, cb, }: {
         bpmnProcessId: string;
         variables: Variables;
         version?: number;
         cb: (processOutcome: ProcessOutcome) => void;
-    }): Promise<import("zeebe-node/dist/lib/interfaces-grpc-1.0").CreateProcessInstanceResponse>;
+    }): Promise<any>;
     waitForAffinity(): Promise<void>;
     private throwNoConnection;
     private createAffinityService;
