@@ -1,8 +1,8 @@
 /// <reference types="node" />
-import WebSocket from "ws";
+import WebSocket from 'ws';
 interface ZBAffinityServerOptions {
     statsInterval?: number;
-    logLevel?: "INFO" | "DEBUG";
+    logLevel?: 'INFO' | 'DEBUG';
 }
 interface WebSocketWithAlive extends WebSocket {
     isAlive: boolean;

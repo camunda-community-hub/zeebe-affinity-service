@@ -1,10 +1,10 @@
 # Zeebe Node Affinity 
 
-This is a server and an enhanced Zeebe Node client (extending [zeebe-node](https://github.com/creditsenseau/zeebe-client-node-js)) to enable you to return the outcome of a Zeebe workflow in a synchronous REST req/res pattern.
+This is a server and an enhanced Zeebe Node client (extending [zeebe-node](https://github.com/creditsenseau/zeebe-client-node-js)) to enable you to return the outcome of a Zeebe process in a synchronous REST req/res pattern.
 
 It's a Proof-of-Concept, and not intended for production use without further testing.
 
-You may initiate a workflow in Zeebe in response to a REST request, and want to return the outcome of that workflow in the REST response. If your REST front-end is scalable, you need some kind of session affinity.
+You may initiate a process in Zeebe in response to a REST request, and want to return the outcome of that process in the REST response. If your REST front-end is scalable, you need some kind of session affinity.
 
 ## Install
 
@@ -18,7 +18,7 @@ npm i zeebe-node-affinity
 
 ### Websocket
 
-Zeebe Node Affinity uses a websocket server to distribute workflow outcomes to interested clients. The `zeebe-node-affinity` library provides the `createWorkflowWithAffinity` method that extends the `createWorkflow` method with a callback. This callback is executed in-memory with the final variable state of the workflow. It can be used like this:
+Zeebe Node Affinity uses a websocket server to distribute process outcomes to interested clients. The `zeebe-node-affinity` library provides the `createProcessWithAffinity` method that extends the `createProcess` method with a callback. This callback is executed in-memory with the final variable state of the process. It can be used like this:
 
 ```typescript
 const { ZBAffinityClient } = require("zeebe-node-affinity");
@@ -28,15 +28,15 @@ const zbc = new ZBAffinityClient("zeebe-broker:26500", {
 });
 
 async function handleRequest(req, res) {
-    const wfi =  await zbc.createWorkflowInstanceWithAffinity({
+    const wfi =  await zbc.createProcessInstanceWithAffinity({
         bpmnProcessId: req.route,
         variables: req.params,
-        cb: ({ variables }) => res.send(variables) // <- this callback gets the workflow outcome
+        cb: ({ variables }) => res.send(variables) // <- this callback gets the process outcome
     }).catch(err => {
         console.error(err.stack)
         res.status(500).send("Something broke!")
     });
-    console.log(`Created new workflow instance ${wfi.key}`);
+    console.log(`Created new process instance ${wfi.key}`);
 }
 ```
 
@@ -57,7 +57,7 @@ setInterval(() => zbs.outputStats(), 1000 * 60 * 5); // 5 minutes
 
 This server needs to run on the same network as the REST server front-end and the Zeebe workers.
 
-To communicate the outcome of the workflow to the Zeebe Affinity Server, you need to put a task as the last task in your workflow, and create a Zeebe Affinity worker to service it:
+To communicate the outcome of the process to the Zeebe Affinity Server, you need to put a task as the last task in your process, and create a Zeebe Affinity worker to service it:
 
 ![](img/affinity-task.png)
 
@@ -79,7 +79,7 @@ const afw = zbc.createAffinityWorker("publish-outcome")
                 .catch(e => console.log("Could not contact Affinity Server!"));
 ```
 
-The Affinity Worker will now service this task-type, and communicate the workflow state to the Affinity Server, which sends it to all connected clients, where it is matched against the workflow instance key to invoke the handler on the appropriate client.
+The Affinity Worker will now service this task-type, and communicate the process state to the Affinity Server, which sends it to all connected clients, where it is matched against the process instance key to invoke the handler on the appropriate client.
 
 We throw in the constructor if we cannot contact the affinity server within `affinityTimeout` milliseconds. We don't want the worker completing jobs if it cannot communicate the results to the Affinity Server.
 
@@ -88,9 +88,9 @@ Similarly, the worker will fail jobs that it takes where it cannot communicate t
 ### Redis
 
 
-Zeebe Node Affinity also allow to use a Redis pub/sub system to distribute workflow outcomes to interested clients. The `zeebe-node-affinity` library provides `RedisAffinity` and the `createWorkflowInstanceWithAffinity` method that extends the `createWorkflow` method with a callback. This callback is executed in-memory with the final variable state of the workflow. It can be used like this:
+Zeebe Node Affinity also allow to use a Redis pub/sub system to distribute process outcomes to interested clients. The `zeebe-node-affinity` library provides `RedisAffinity` and the `createProcessInstanceWithAffinity` method that extends the `createProcess` method with a callback. This callback is executed in-memory with the final variable state of the process. It can be used like this:
 
-Create workflow with redis affinity:
+Create process with redis affinity:
 
 ```typescript
 const { RedisAffinity } = require("zeebe-node-affinity") 
@@ -99,8 +99,8 @@ const zbcRedis = new RedisAffinity(ZEEBE_GATEWAY, { host: REDIS_HOST, password: 
 
 
 async function handleRequest(req, res) {
-    zbcRedis.createWorkflowInstanceWithAffinity({
-            bpmnProcessId: workflowName,
+    zbcRedis.createProcessInstanceWithAffinity({
+            bpmnProcessId: processName,
             variables: {
             correlationKey,
             userInputText: userInput,
@@ -108,11 +108,11 @@ async function handleRequest(req, res) {
             },
             cb: (message) => res.send(message),
         })
-        .catch(e => console.log("Could not create a workflow instance!"));
+        .catch(e => console.log("Could not create a process instance!"));
 }
 ```
 
-To communicate the outcome of the workflow to the Zeebe Affinity Client, you need to put a task as the last task in your workflow, and create a Zeebe Affinity worker to service it:
+To communicate the outcome of the process to the Zeebe Affinity Client, you need to put a task as the last task in your process, and create a Zeebe Affinity worker to service it:
 
 ```typescript
 const { RedisAffinity } = require("zeebe-node-affinity");
@@ -137,7 +137,7 @@ async function handleRequest(req, res) {
             userInputText: userInput,
             chatFinished,
             },
-            workflowInstanceKey,
+            processInstanceKey,
             timeToLive: Duration.seconds.of(10), // seconds
             cb: (message) => res.send(message),
         })
@@ -147,7 +147,7 @@ async function handleRequest(req, res) {
 
 ## Scaling
 
-The Zeebe Workflow Clients (which initiate workflows), and the Zeebe Affinity Workers (which collect the workflow outcomes) can be scaled.
+The Zeebe process Clients (which initiate processs), and the Zeebe Affinity Workers (which collect the process outcomes) can be scaled.
 
 In this Proof-of-Concept implementation, the Zeebe Affinity Service, however, must be a singleton, and cannot be load-balanced or scaled.
 

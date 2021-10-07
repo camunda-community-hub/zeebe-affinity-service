@@ -1,12 +1,12 @@
-import WebSocket from "ws";
+import WebSocket from 'ws';
 export declare enum AffinityAPIMessageType {
-    WORKFLOW_OUTCOME = "WORKFLOW_OUTCOME",
+    PROCESS_OUTCOME = "PROCESS_OUTCOME",
     REGISTER_WORKER = "REGISTER_WORKER",
     REGISTER_CLIENT = "REGISTER_CLIENT"
 }
-export interface WorkflowOutcomeMessage {
-    type: AffinityAPIMessageType.WORKFLOW_OUTCOME;
-    workflowInstanceKey: string;
+export interface ProcessOutcomeMessage {
+    type: AffinityAPIMessageType.PROCESS_OUTCOME;
+    processInstanceKey: string;
     variables: {
         [key: string]: string | number;
     };
@@ -17,16 +17,16 @@ export interface RegisterClientMessage {
 export interface RegisterWorkerMessage {
     type: AffinityAPIMessageType.REGISTER_WORKER;
 }
-export interface WorkflowOutcome {
-    workflowInstanceKey: string;
+export interface ProcessOutcome {
+    processInstanceKey: string;
     variables: {
         [key: string]: string | number;
     };
 }
 export declare function registerWorker(ws: WebSocket): void;
 export declare function registerClient(ws: WebSocket): void;
-export declare function broadcastWorkflowOutcome(clients: {
+export declare function broadcastProcessOutcome(clients: {
     [uuid: string]: WebSocket;
-}, workflowOutcome: WorkflowOutcome): void;
-export declare function demarshalWorkflowOutcome(data: any): WorkflowOutcome | undefined;
-export declare function publishWorkflowOutcomeToAffinityService(workflowOutcome: WorkflowOutcome, ws: any): void;
+}, processOutcome: ProcessOutcome): void;
+export declare function demarshalProcessOutcome(data: any): ProcessOutcome | undefined;
+export declare function publishProcessOutcomeToAffinityService(processOutcome: ProcessOutcome, ws: any): void;

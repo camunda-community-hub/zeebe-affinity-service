@@ -1,10 +1,9 @@
 /* eslint-disable no-unused-vars */
 import redis, { ClientOpts, RedisClient } from 'redis';
-import { v4 as uuid } from 'uuid';
 import { Duration, KeyedObject, ZBClient } from 'zeebe-node';
-import { WorkflowOutcome } from "./WebSocketAPI";
+import { ProcessOutcome } from './WebSocketAPI';
 
-// TODO: handle errors if missing parameters (example: workflow instance key)
+// TODO: handle errors if missing parameters (example: process instance key)
 // TODO: purge the service
 
 export class RedisAffinity extends ZBClient {
@@ -14,7 +13,7 @@ export class RedisAffinity extends ZBClient {
 
     affinityCallbacks: {
         // eslint-disable-next-line no-unused-vars
-        [workflowInstanceKey: string]: (workflowOutcome: WorkflowOutcome) => void;
+        [processInstanceKey: string]: (processOutcome: ProcessOutcome) => void;
     };
 
     constructor(gatewayAddress: string, redisOptions: ClientOpts) {
@@ -24,10 +23,10 @@ export class RedisAffinity extends ZBClient {
         this.publisher = redis.createClient(redisOptions);
         this.affinityCallbacks = {};
 
-        this.subscriber.on('connected', (error) => {
+        this.subscriber.on('connected', () => {
             console.log('Subscriber connected');
         });
-        this.publisher.on('connected', (error) => {
+        this.publisher.on('connected', () => {
             console.log('Publisher connected');
         });
         this.subscriber.on('error', (error) => {
@@ -48,37 +47,53 @@ export class RedisAffinity extends ZBClient {
     }
 
     async createAffinityWorker(taskType: string): Promise<void> {
-        const workerId: string = uuid();
-
         // create worker (ZB client)
-        super.createWorker(workerId, taskType, async (job, complete) => {
-            console.log(`Publish message on channel: ${job.workflowInstanceKey}`);
-            const updatedVars = {
-                ...job?.variables,
-                workflowInstanceKey: job?.workflowInstanceKey,
-            };
-            this.publisher.publish(job.workflowInstanceKey, JSON.stringify(updatedVars));
-            await complete.success(updatedVars);
+        super.createWorker({
+            taskType,
+            taskHandler: async (job) => {
+                try {
+                    console.log(
+                        `Publish message on channel: ${job.processInstanceKey}`,
+                    );
+                    const updatedVars = {
+                        ...job?.variables,
+                        processInstanceKey: job?.processInstanceKey,
+                    };
+                    this.publisher.publish(
+                        job.processInstanceKey,
+                        JSON.stringify(updatedVars),
+                    );
+                    return await job.complete(updatedVars);
+                } catch (error: any) {
+                    console.error(
+                        `Error while publishing message on channel: ${job.processInstanceKey}`,
+                    );
+                    return job.fail(error.message);
+                }
+            },
         });
     }
 
-    async createWorkflowInstanceWithAffinity<Variables = KeyedObject>({
+    async createProcessInstanceWithAffinity<Variables = KeyedObject>({
         bpmnProcessId,
         variables,
         cb,
     }: {
         bpmnProcessId: string;
         variables: Variables;
-        cb: (workflowOutcome: WorkflowOutcome) => void;
+        cb: (processOutcome: ProcessOutcome) => void;
     }): Promise<void> {
         try {
-            // create workflow instance (ZB client)
-            const wfi = await super.createWorkflowInstance(bpmnProcessId, variables);
+            // create process instance (ZB client)
+            const wfi = await super.createProcessInstance(
+                bpmnProcessId,
+                variables,
+            );
 
-            this.affinityCallbacks[wfi.workflowInstanceKey] = cb;
+            this.affinityCallbacks[wfi.processInstanceKey] = cb;
 
-            this.subscriber.subscribe(wfi.workflowInstanceKey, () => {
-                console.log(`Subscribe to channel ${wfi.workflowInstanceKey}`);
+            this.subscriber.subscribe(wfi.processInstanceKey, () => {
+                console.log(`Subscribe to channel ${wfi.processInstanceKey}`);
             });
         } catch (err) {
             console.error(err);
@@ -91,15 +106,15 @@ export class RedisAffinity extends ZBClient {
         messageId,
         name,
         variables,
-        workflowInstanceKey,
+        processInstanceKey,
         cb,
     }: {
         correlationKey: string;
         messageId: string;
         name: string;
         variables: Variables;
-        workflowInstanceKey: string;
-        cb: (workflowOutcome: WorkflowOutcome) => void;
+        processInstanceKey: string;
+        cb: (processOutcome: ProcessOutcome) => void;
     }): Promise<void> {
         await super.publishMessage({
             correlationKey,
@@ -109,11 +124,11 @@ export class RedisAffinity extends ZBClient {
             timeToLive: Duration.seconds.of(10),
         });
 
-        this.affinityCallbacks[workflowInstanceKey] = cb;
+        this.affinityCallbacks[processInstanceKey] = cb;
 
-        // TODO: add error message if missing workflowInstanceKey
-        this.subscriber.subscribe(workflowInstanceKey, () => {
-            console.log(`Subscribe to channel ${workflowInstanceKey}`);
+        // TODO: add error message if missing processInstanceKey
+        this.subscriber.subscribe(processInstanceKey, () => {
+            console.log(`Subscribe to channel ${processInstanceKey}`);
         });
     }
 
