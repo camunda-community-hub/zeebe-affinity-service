@@ -21,8 +21,6 @@ interface WebSocketWithAlive extends WebSocket {
     isClient: boolean;
 }
 
-function noop() {}
-
 function heartbeat() {
     this.isAlive = true;
 }
@@ -90,6 +88,7 @@ export class ZBAffinityServer {
                 switch (msg.type) {
                     case AffinityAPIMessageType.REGISTER_CLIENT:
                         ws.isClient = true;
+                        // eslint-disable-next-line no-case-declarations
                         const clientId = ws.uuid || uuid();
                         ws.uuid = clientId;
                         this.clients[clientId] = ws;
@@ -98,6 +97,7 @@ export class ZBAffinityServer {
                         break;
                     case AffinityAPIMessageType.REGISTER_WORKER:
                         ws.isWorker = true;
+                        // eslint-disable-next-line no-case-declarations
                         const workerId = ws.uuid || uuid();
                         ws.uuid = workerId;
                         this.workers[workerId] = ws;

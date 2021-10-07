@@ -46,7 +46,7 @@ export class ZBAffinityClient extends ZBClient {
         registerWorker(this.affinityService);
         super.createWorker({
             taskType,
-            taskHandler: async (job, _, worker) => {
+            taskHandler: async (job) => {
                 if (this.affinityService.readyState !== WebSocket.OPEN) {
                     try {
                         await this.waitForAffinity();
@@ -71,14 +71,13 @@ export class ZBAffinityClient extends ZBClient {
     async createProcessInstanceWithAffinity<Variables = KeyedObject>({
         bpmnProcessId,
         variables,
-        version,
         cb,
     }: {
         bpmnProcessId: string;
         variables: Variables;
         version?: number;
         cb: (processOutcome: ProcessOutcome) => void;
-    }) {
+    }): Promise<any> {
         await this.waitForAffinity();
 
         // TODO check for error creating process to prevent registering callback?
@@ -123,8 +122,8 @@ export class ZBAffinityClient extends ZBClient {
         }
         console.log('Creating affinity connection');
         const setUpConnection = this.setUpConnection.bind(this);
-        await promiseRetry((retry, number) =>
-            new Promise(async (resolve, reject) => {
+        await promiseRetry((retry) =>
+            new Promise((resolve, reject) => {
                 try {
                     this.affinityService = new WebSocket(
                         this.affinityServiceUrl,

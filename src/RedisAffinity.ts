@@ -23,10 +23,10 @@ export class RedisAffinity extends ZBClient {
         this.publisher = redis.createClient(redisOptions);
         this.affinityCallbacks = {};
 
-        this.subscriber.on('connected', (error) => {
+        this.subscriber.on('connected', () => {
             console.log('Subscriber connected');
         });
-        this.publisher.on('connected', (error) => {
+        this.publisher.on('connected', () => {
             console.log('Publisher connected');
         });
         this.subscriber.on('error', (error) => {
@@ -50,7 +50,7 @@ export class RedisAffinity extends ZBClient {
         // create worker (ZB client)
         super.createWorker({
             taskType,
-            taskHandler: async (job, _, worker) => {
+            taskHandler: async (job) => {
                 try {
                     console.log(
                         `Publish message on channel: ${job.processInstanceKey}`,
