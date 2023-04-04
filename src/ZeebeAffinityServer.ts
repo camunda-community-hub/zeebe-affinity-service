@@ -42,7 +42,7 @@ export class ZBAffinityServer {
         this.logLevel = this.options.logLevel || 'INFO';
     }
 
-    listen(port: number, cb?: () => void) {
+    listen(port: number, cb?: () => void): void {
         this.wss = new WebSocket.Server({
             port,
             perMessageDeflate: false,
@@ -89,7 +89,7 @@ export class ZBAffinityServer {
                     case AffinityAPIMessageType.REGISTER_CLIENT:
                         ws.isClient = true;
                         // eslint-disable-next-line no-case-declarations
-                        const clientId = ws.uuid || uuid();
+                        const clientId = ws.uuid //|| uuid();
                         ws.uuid = clientId;
                         this.clients[clientId] = ws;
                         this.connections[clientId] = ws;
@@ -98,7 +98,7 @@ export class ZBAffinityServer {
                     case AffinityAPIMessageType.REGISTER_WORKER:
                         ws.isWorker = true;
                         // eslint-disable-next-line no-case-declarations
-                        const workerId = ws.uuid || uuid();
+                        const workerId = ws.uuid //|| uuid();
                         ws.uuid = workerId;
                         this.workers[workerId] = ws;
                         this.connections[workerId] = ws;
@@ -113,26 +113,29 @@ export class ZBAffinityServer {
         if (cb) {
             cb();
         }
+        
     }
 
-    stats() {
+    stats(): Record<string, unknown> {
         return {
-            time: dayjs().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'), // display
-            workerCount: Object.keys(this.workers).length,
-            clientCount: Object.keys(this.clients).length,
-            cpu: process.cpuUsage(),
-            memory: process.memoryUsage(),
+          time: dayjs().format('{YYYY} MM-DDTHH:mm:ss SSS [Z] A'), // display
+          workerCount: Object.keys(this.workers).length,
+          clientCount: Object.keys(this.clients).length,
+          cpu: process.cpuUsage(),
+          memory: process.memoryUsage(),
         };
-    }
+      }
+      
 
-    outputStats() {
+     outputStats(): void {
         const stats = this.stats();
         console.log(stats.time); // display
         console.log(`Worker count: ${stats.workerCount}`);
         console.log(`Client count: ${stats.clientCount}`);
-        console.log(`CPU:`, stats.cpu);
-        console.log(`Memory used:`, stats.memory);
-    }
+        console.log(`CPU: ${stats.cpu}`);
+        console.log(`Memory used: ${stats.memory}`);
+      }
+      
 
     private log(...args) {
         console.log(args);
@@ -142,5 +145,7 @@ export class ZBAffinityServer {
         if (this.logLevel === 'DEBUG') {
             console.log(args);
         }
+        return undefined
     }
+    
 }

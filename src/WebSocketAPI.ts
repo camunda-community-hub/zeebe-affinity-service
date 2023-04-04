@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import WebSocket, { Data } from 'ws';
 
 export enum AffinityAPIMessageType {
     PROCESS_OUTCOME = 'PROCESS_OUTCOME',
@@ -25,18 +25,20 @@ export interface ProcessOutcome {
     variables: { [key: string]: string | number };
 }
 
-export function registerWorker(ws: WebSocket) {
+export function registerWorker(ws: WebSocket): void {
     ws.send(JSON.stringify({ type: AffinityAPIMessageType.REGISTER_WORKER }));
+    return;
 }
 
-export function registerClient(ws: WebSocket) {
+export function registerClient(ws: WebSocket): void {
     ws.send(JSON.stringify({ type: AffinityAPIMessageType.REGISTER_CLIENT }));
+    return;
 }
 
 export function broadcastProcessOutcome(
     clients: { [uuid: string]: WebSocket },
     processOutcome: ProcessOutcome,
-) {
+): void {
     const message: ProcessOutcomeMessage = {
         type: AffinityAPIMessageType.PROCESS_OUTCOME,
         ...processOutcome,
@@ -46,9 +48,10 @@ export function broadcastProcessOutcome(
             client.send(JSON.stringify(message));
         }
     });
+    return;
 }
 
-export function demarshalProcessOutcome(data): ProcessOutcome | undefined {
+export function demarshalProcessOutcome(data: Data): ProcessOutcome | undefined {
     const message = JSON.parse(data.toString());
     return (message.type = AffinityAPIMessageType.PROCESS_OUTCOME
         ? { ...message, type: undefined }
@@ -57,8 +60,8 @@ export function demarshalProcessOutcome(data): ProcessOutcome | undefined {
 
 export function publishProcessOutcomeToAffinityService(
     processOutcome: ProcessOutcome,
-    ws,
-) {
+    ws: WebSocket,
+) : void {
     const processOutcomeMessage: ProcessOutcomeMessage = {
         type: AffinityAPIMessageType.PROCESS_OUTCOME,
         ...processOutcome,

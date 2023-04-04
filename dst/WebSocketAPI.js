@@ -13,10 +13,12 @@ var AffinityAPIMessageType;
 })(AffinityAPIMessageType = exports.AffinityAPIMessageType || (exports.AffinityAPIMessageType = {}));
 function registerWorker(ws) {
     ws.send(JSON.stringify({ type: AffinityAPIMessageType.REGISTER_WORKER }));
+    return;
 }
 exports.registerWorker = registerWorker;
 function registerClient(ws) {
     ws.send(JSON.stringify({ type: AffinityAPIMessageType.REGISTER_CLIENT }));
+    return;
 }
 exports.registerClient = registerClient;
 function broadcastProcessOutcome(clients, processOutcome) {
@@ -29,6 +31,7 @@ function broadcastProcessOutcome(clients, processOutcome) {
             client.send(JSON.stringify(message));
         }
     });
+    return;
 }
 exports.broadcastProcessOutcome = broadcastProcessOutcome;
 function demarshalProcessOutcome(data) {

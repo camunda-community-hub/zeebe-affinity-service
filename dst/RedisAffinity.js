@@ -52,8 +52,13 @@ class RedisAffinity extends zeebe_node_1.ZBClient {
                     return await job.complete(updatedVars);
                 }
                 catch (error) {
-                    console.error(`Error while publishing message on channel: ${job.processInstanceKey}`);
-                    return job.fail(error.message);
+                    if (error instanceof Error) {
+                        console.error(`Error while publishing message on channel: ${job.processInstanceKey}`);
+                        return job.fail(error.message);
+                    }
+                    else {
+                        throw error;
+                    }
                 }
             },
         });

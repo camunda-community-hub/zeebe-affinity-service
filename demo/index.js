@@ -1,3 +1,5 @@
+/* eslint-disable promise/catch-or-return */
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { ZBAffinityClient } = require("../dst"); // require("zeebe-node-affinity");
 
 // On the internal network, we are using the Zeebe Node client with Affinity - zeebe-node-affinity
@@ -7,15 +9,14 @@ const zbc = new ZBAffinityClient("localhost:26500", {
 
 /* Emulated REST Client that requests a route that triggers a workflow, and receives the outcome in the response */
 function emulateRESTClient() {
-  const req = { route: "/affinity-test", params: { name: "John" } };
-  const responseHandler = res => console.log("Received", res);
   console.log(`\nREST Client:`);
   // Make 100 requests
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 50; i++) {
+    const req = { route: "/affinity-test", params: { name: `John${i}` } };
+    const responseHandler = res => console.log("Received response from server:", res);
     setTimeout(() => {
       console.log(`Posting`, req);
       httpGET(req, responseHandler);
-      req.params.name = `John${i}`;
     }, i * 200);
   }
 }
@@ -30,20 +31,31 @@ function httpGET(req, clientResponseHandler) {
     send: clientResponseHandler
   };
   const routedRequest = { ...req, route: req.route.split("/")[1] }; // Remove slash
+  console.log('Sent request to server:', routedRequest);
   serverRESTHandler(routedRequest, res);
 }
 
 /* Route handler */
 async function serverRESTHandler(req, res) {
-  const wfi = await zbc.createWorkflowInstanceWithAffinity({
-    bpmnProcessId: req.route,
-    variables: req.params,
-    cb: ({ variables }) => res.send(variables) // <- this callback gets the workflow outcome
-  });
+  try {
+    const variables = await zbc.createProcessInstanceWithAffinity({
+      bpmnProcessId: req.route,
+      variables: req.params,
+    });
+    console.log('Received response from server:', JSON.stringify(variables));
+    res.send(variables);
+  } catch (error) {
+    console.error('Error in serverRESTHandler:', error);
+    res.send(error);
+  }
 }
 
 async function deployWorkflow() {
-  const wf = await zbc.deployWorkflow("./affinity-test.bpmn");
+  const bpmnFilePath = "../demo/affinity-test.bpmn";
+  const wf = await zbc.deployProcess(bpmnFilePath);
+  console.log(`VF => ${JSON.stringify(wf)}`);
 }
 
-deployWorkflow().then(emulateRESTClient);
+deployWorkflow().then(emulateRESTClient).catch((error) => {
+  console.error('Error in deployWorkflow:', error);
+});

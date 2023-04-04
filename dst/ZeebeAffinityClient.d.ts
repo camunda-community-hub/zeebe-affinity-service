@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import WebSocket from 'ws';
 import { ZBClient } from 'zeebe-node';
-import { KeyedObject } from 'zeebe-node/dist/lib/interfaces';
+import { JSONDoc } from 'zeebe-node';
 import { ZBClientOptions } from 'zeebe-node/dist/lib/interfaces-published-contract';
 import { ProcessOutcome } from './WebSocketAPI';
 interface ZBAffinityClientOptions extends ZBClientOptions {
@@ -11,7 +11,7 @@ interface ZBAffinityClientOptions extends ZBClientOptions {
 export declare class ZBAffinityClient extends ZBClient {
     affinityServiceUrl: string;
     affinityService: WebSocket;
-    ws: any;
+    ws?: WebSocket;
     affinityCallbacks: {
         [processInstanceKey: string]: (processOutcome: ProcessOutcome) => void;
     };
@@ -19,12 +19,12 @@ export declare class ZBAffinityClient extends ZBClient {
     pingTimeout: NodeJS.Timer;
     constructor(gatewayAddress: string, options: ZBAffinityClientOptions);
     createAffinityWorker(taskType: string): Promise<void>;
-    createProcessInstanceWithAffinity<Variables = KeyedObject>({ bpmnProcessId, variables, cb, }: {
+    createProcessInstanceWithAffinity<Variables extends JSONDoc>({ bpmnProcessId, variables, cb, }: {
         bpmnProcessId: string;
         variables: Variables;
         version?: number;
         cb: (processOutcome: ProcessOutcome) => void;
-    }): Promise<any>;
+    }): Promise<unknown>;
     waitForAffinity(): Promise<void>;
     private throwNoConnection;
     private createAffinityService;
