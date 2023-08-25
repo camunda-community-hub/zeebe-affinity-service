@@ -26,13 +26,7 @@ export declare class ZBAffinityServer {
     logLevel: string;
     constructor(options?: ZBAffinityServerOptions);
     listen(port: number, cb?: () => void): void;
-    stats(): {
-        time: string;
-        workerCount: number;
-        clientCount: number;
-        cpu: NodeJS.CpuUsage;
-        memory: NodeJS.MemoryUsage;
-    };
+    stats(): Record<string, unknown>;
     outputStats(): void;
     private log;
     private debug;

@@ -1,7 +1,7 @@
 import promiseRetry from 'promise-retry';
 import WebSocket from 'ws';
 import { ZBClient } from 'zeebe-node';
-import { KeyedObject } from 'zeebe-node/dist/lib/interfaces';
+import { JSONDoc } from 'zeebe-node';
 import { ZBClientOptions } from 'zeebe-node/dist/lib/interfaces-published-contract';
 import {
     demarshalProcessOutcome,
@@ -20,7 +20,7 @@ interface ZBAffinityClientOptions extends ZBClientOptions {
 export class ZBAffinityClient extends ZBClient {
     affinityServiceUrl: string;
     affinityService!: WebSocket;
-    ws: any;
+    ws?: WebSocket;
     affinityCallbacks: {
         [processInstanceKey: string]: (processOutcome: ProcessOutcome) => void;
     };
@@ -41,7 +41,7 @@ export class ZBAffinityClient extends ZBClient {
         this.createAffinityService();
     }
 
-    async createAffinityWorker(taskType: string) {
+    async createAffinityWorker(taskType: string): Promise<void> {
         await this.waitForAffinity();
         registerWorker(this.affinityService);
         super.createWorker({
@@ -68,7 +68,7 @@ export class ZBAffinityClient extends ZBClient {
         });
     }
 
-    async createProcessInstanceWithAffinity<Variables = KeyedObject>({
+    async createProcessInstanceWithAffinity<Variables extends JSONDoc>({
         bpmnProcessId,
         variables,
         cb,
@@ -77,19 +77,18 @@ export class ZBAffinityClient extends ZBClient {
         variables: Variables;
         version?: number;
         cb: (processOutcome: ProcessOutcome) => void;
-    }): Promise<any> {
+    }): Promise<unknown> {
         await this.waitForAffinity();
 
         // TODO check for error creating process to prevent registering callback?
         const wfi = await super.createProcessInstance(bpmnProcessId, variables);
-
         if (this.affinityService) {
             this.affinityCallbacks[wfi.processInstanceKey] = cb; // Register callback for application code
         }
         return wfi;
     }
 
-    async waitForAffinity() {
+    async waitForAffinity(): Promise<void> {
         if (
             !this.affinityService ||
             this.affinityService.readyState !== WebSocket.OPEN
@@ -139,9 +138,13 @@ export class ZBAffinityClient extends ZBClient {
                         setUpConnection();
                         resolve(null);
                     });
-                } catch (e: any) {
-                    console.log(e.message);
-                    reject(e);
+                } catch (error: unknown) {
+                    if (error instanceof Error) {
+                    console.log(error.message);
+                    reject(error);}
+                    else{
+                        throw error;
+                    }
                 }
             }).catch(retry),
         );
@@ -152,7 +155,7 @@ export class ZBAffinityClient extends ZBClient {
 
         this.pingTimeout = setTimeout(() => {
             this.affinityService.terminate();
-            this.affinityService = undefined as any;
+            this.affinityService =  undefined as unknown as WebSocket;
             this.createAffinityService();
         }, 30000 + 1000);
     }
@@ -174,7 +177,7 @@ export class ZBAffinityClient extends ZBClient {
             const wfi = outcome.processInstanceKey;
             if (this.affinityCallbacks[wfi]) {
                 this.affinityCallbacks[wfi](outcome);
-                this.affinityCallbacks[wfi] = undefined as any; // Object.delete degrades performance with large objects
+                this.affinityCallbacks[wfi] = undefined as never; // Object.delete degrades performance with large objects
             }
         }
     }

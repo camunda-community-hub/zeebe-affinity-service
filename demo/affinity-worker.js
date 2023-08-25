@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { ZBAffinityClient } = require("../dst"); // require("zeebe-node-affinity");
 
 const zbc = new ZBAffinityClient("localhost:26500", {

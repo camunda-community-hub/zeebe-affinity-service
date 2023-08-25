@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { ZBClient } = require("zeebe-node");
 
 // The normal workers don't need affinity, although you can use the same affinity client to avoid version mis-matches.

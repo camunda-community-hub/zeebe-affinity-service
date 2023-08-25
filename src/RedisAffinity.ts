@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import redis, { ClientOpts, RedisClient } from 'redis';
-import { Duration, KeyedObject, ZBClient } from 'zeebe-node';
+import { Duration,JSONDoc, ZBClient } from 'zeebe-node';
 import { ProcessOutcome } from './WebSocketAPI';
 
 // TODO: handle errors if missing parameters (example: process instance key)
@@ -64,17 +64,19 @@ export class RedisAffinity extends ZBClient {
                         JSON.stringify(updatedVars),
                     );
                     return await job.complete(updatedVars);
-                } catch (error: any) {
-                    console.error(
-                        `Error while publishing message on channel: ${job.processInstanceKey}`,
-                    );
-                    return job.fail(error.message);
-                }
+                } catch (error: unknown) {
+                    if (error instanceof Error) {
+                      console.error(`Error while publishing message on channel: ${job.processInstanceKey}`);
+                      return job.fail(error.message);
+                    } else {
+                      throw error;
+                    }
+                  }
             },
         });
     }
 
-    async createProcessInstanceWithAffinity<Variables = KeyedObject>({
+    async createProcessInstanceWithAffinity<Variables extends JSONDoc>({
         bpmnProcessId,
         variables,
         cb,
@@ -101,7 +103,7 @@ export class RedisAffinity extends ZBClient {
         }
     }
 
-    async publishMessageWithAffinity<Variables = KeyedObject>({
+    async publishMessageWithAffinity<Variables extends JSONDoc>({
         correlationKey,
         messageId,
         name,

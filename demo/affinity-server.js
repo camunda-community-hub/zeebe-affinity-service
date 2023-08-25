@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 // Zeebe Affinity Server
 const { ZBAffinityServer } = require("../dst"); // require("zeebe-node-affinity");
 

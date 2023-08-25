@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import WebSocket, { Data } from 'ws';
 export declare enum AffinityAPIMessageType {
     PROCESS_OUTCOME = "PROCESS_OUTCOME",
     REGISTER_WORKER = "REGISTER_WORKER",
@@ -28,5 +28,5 @@ export declare function registerClient(ws: WebSocket): void;
 export declare function broadcastProcessOutcome(clients: {
     [uuid: string]: WebSocket;
 }, processOutcome: ProcessOutcome): void;
-export declare function demarshalProcessOutcome(data: any): ProcessOutcome | undefined;
-export declare function publishProcessOutcomeToAffinityService(processOutcome: ProcessOutcome, ws: any): void;
+export declare function demarshalProcessOutcome(data: Data): ProcessOutcome | undefined;
+export declare function publishProcessOutcomeToAffinityService(processOutcome: ProcessOutcome, ws: WebSocket): void;
