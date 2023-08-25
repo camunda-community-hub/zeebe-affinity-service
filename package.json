@@ -1,6 +1,6 @@
 {
     "name": "zeebe-node-affinity",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Zeebe node client and affinity service to communicate process outcome to its initiator via a web socket subscription",
     "main": "dst/index.js",
     "scripts": {
